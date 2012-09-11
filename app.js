@@ -1,5 +1,6 @@
-var http = require('http');
 var express = require('express');
+var fs = require('fs');
+var http = require('http');
 var sio = require('socket.io');
 
 var app = express();
@@ -12,7 +13,22 @@ app.get('/', function(req, res) {
 });
 app.post('/upload', function(req, res) {
   var puz_file = req.files.puz;
-  console.log(puz_file);
+  if (puz_file.size && puz_file.size < (1 << 20)) {
+    fs.readFile(puz_file.path, function(err, data) {
+      if (err) {
+        console.error('Could not open file: %s', err);
+      } else {
+        puzzle = parse_puzzle_data(data);
+        console.log(puzzle);
+      }
+    });
+  } else if (puz_file.size) {
+    console.log('Puzzle file was too large');
+  } else {
+    console.log('No file uploaded');
+  }
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Upload posted');
 });
 
 web_server = http.createServer(app);
@@ -48,3 +64,10 @@ io.sockets.on('connection', function (socket) {
     socket.broadcast.emit('nicknames', nicknames);
   });
 });
+
+function parse_puzzle_data(data) {
+  puzzle = {}
+  puzzle.width = data[0x2C];
+  puzzle.height = data[0x2D];
+  return puzzle;
+}
