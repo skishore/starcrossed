@@ -25,5 +25,11 @@
             <div id='square2-2' class='white square'></div>
         </div>
       </div>
+      <form id='upload-form' enctype='multipart/form-data' action='/upload'
+            method='post' target='trick-iframe'>
+        <input type='file' name='puz' />
+        <button type='submit'>Upload a .puz file</button>
+      </form>
+      <iframe class='hidden' name='trick-iframe'></iframe>
   </body>
 </html>

@@ -3,11 +3,16 @@ var express = require('express');
 var sio = require('socket.io');
 
 var app = express();
-app.configure(function () {
+app.configure(function() {
   app.use(express.static(__dirname + '/static'));
+  app.use(express.bodyParser());
 });
-app.get('/', function (req, res) {
+app.get('/', function(req, res) {
   res.render('index');
+});
+app.post('/upload', function(req, res) {
+  var puz_file = req.files.puz;
+  console.log(puz_file);
 });
 
 web_server = http.createServer(app);
