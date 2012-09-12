@@ -4,7 +4,13 @@
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
     <title>Starcrossed</title>
     <link type="text/css" href="style.css" rel="stylesheet" />
+    <link type="text/css" href="jqwidgets/jqx.base.css" rel="stylesheet" />
+    <link type="text/css" href="jqwidgets/jqx.starcrossed.css" rel="stylesheet" />
     <script type="text/javascript" src="jquery-1.8.1.min.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxbuttons.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxscrollbar.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxlistbox.js"></script>
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="script.js"></script>
   </head>
@@ -16,6 +22,10 @@
     </div>
     <div id='board-outer-wrapper'>
       <div id='board-wrapper'>
+        <div id='clues'>
+          <div id='accross'></div>
+          <div id='down'></div>
+        </div>
         <div id='board'>
             <div id='square0-0' class='white square'><p class='number'>128</p><p class='contents'>a</p></div>
             <div id='square0-1' class='black square'></div>

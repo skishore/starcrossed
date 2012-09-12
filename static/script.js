@@ -42,7 +42,6 @@ function updatePuzzle(value) {
   if (puzzle == undefined) {
     $('#title').html('');
     $('#author').html('');
-    $('#board').html('');
     $('#upload-form').removeClass('hidden');
     return;
   }
@@ -52,17 +51,19 @@ function updatePuzzle(value) {
   board_html = '';
   for (var i = 0; i < puzzle.height; i++) {
     for (var j = 0; j < puzzle.width; j++) {
-      board_html += getSquare(puzzle, i, j);
+      board_html += buildSquare(puzzle, i, j);
     }
     if (i + 1 < puzzle.height) {
       board_html += '<br>';
     }
   }
   $('#board').html(board_html);
+  buildCluesList(puzzle.accross, 'accross');
+  buildCluesList(puzzle.down, 'down');
   $('#upload-form').addClass('hidden');
 }
 
-function getSquare(puzzle, i, j) {
+function buildSquare(puzzle, i, j) {
   var square_class = 'white square';
   var square_number = '&nbsp';
   var contents = '';
@@ -82,6 +83,33 @@ function getSquare(puzzle, i, j) {
                     contents + '</p>');
   return ('<div id="square' + id + '" class="' + square_class + '">' +
           inner_html + '</div>');
+}
+
+function buildCluesList(cluesDict, listDiv) {
+  var height = $('#board').height()/2 - 2;
+  var keys = getKeys(cluesDict);
+  var source = [];
+  for (var i = 0; i < keys.length; i++) {
+    source.push({html: buildClue(keys[i], cluesDict[keys[i]]), value: keys[i]});
+  }
+  $('#' + listDiv).jqxListBox({source: source, theme: 'starcrossed',
+                               width: 264, height: height});
+}
+
+function getKeys(dict) {
+  var keys = [];
+  for (var key in dict) {
+    if (dict.hasOwnProperty(key)) {
+      keys.push(key);
+    }
+  }
+  keys.sort(function(a, b) {return a - b;});
+  return keys;
+}
+
+function buildClue(num, clue) {
+  return ('<div><span class="clue-number">' + num + '.</span' +
+          '<div class="clue">' + clue  + '</div></div>');
 }
 
 function readPIDFromHash() {

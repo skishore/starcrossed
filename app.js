@@ -134,9 +134,9 @@ function StringParser(buffer, offset) {
 var io = sio.listen(web_server, {log: false})
 var nicknames = {};
 io.sockets.on('connection', function (socket) {
-  socket.on('get_puzzle', function(message) {
-    if (message in puzzles) {
-      socket.emit('get_puzzle', JSON.stringify(puzzles[message]));
+  socket.on('get_puzzle', function(pid) {
+    if (puzzles.hasOwnProperty(pid)) {
+      socket.emit('get_puzzle', JSON.stringify(puzzles[pid]));
     }
   });
 });

@@ -51,6 +51,28 @@ div.status.disconnected {
   background-color: blue;
 }
 
+#clues {
+  float: left;
+}
+
+.clue-number {
+  float: left;
+  width: 32px;
+  padding-right: 4px;
+  text-align: right;
+  font-weight: bold;
+}
+
+.clue {
+  float: left;
+  width: 192px;
+  white-space: normal;
+}
+
+#board {
+  float: right;
+}
+
 div.square {
   position:relative;
   float: left;
