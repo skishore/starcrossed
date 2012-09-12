@@ -3,6 +3,8 @@ var fs = require('fs');
 var http = require('http');
 var sio = require('socket.io');
 
+var puzzles = {};
+
 var app = express();
 app.configure(function() {
   app.use(express.static(__dirname + '/static'));
@@ -12,13 +14,19 @@ app.get('/', function(req, res) {
   res.render('index');
 });
 app.post('/upload', function(req, res) {
+  var uid = req.body.uid;
   var puz_file = req.files.puz;
+  console.log('Received puzzle data from user %s', uid);
   if (puz_file.size && puz_file.size < (1 << 20)) {
     fs.readFile(puz_file.path, function(err, data) {
       if (err) {
         console.error('Could not open file: %s', err);
       } else {
-        puzzle = parse_puzzle_data(data);
+        var puzzle = parse_puzzle_data(data);
+        var pid = Math.floor((1 << 30)*Math.random());
+        puzzles[pid] = puzzle;
+        var message = JSON.stringify({uid: uid, pid: pid});
+        io.sockets.emit('pid', message);
       }
     });
   } else if (puz_file.size) {

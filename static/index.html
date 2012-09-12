@@ -27,6 +27,7 @@
       </div>
       <form id='upload-form' enctype='multipart/form-data' action='/upload'
             method='post' target='trick-iframe'>
+        <input type='text' name='uid' id='uid-text' class='hidden' />
         <input type='file' name='puz' />
         <button type='submit'>Upload a .puz file</button>
       </form>
