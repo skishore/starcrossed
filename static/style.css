@@ -100,10 +100,11 @@ p.contents {
 
 form {
   position: relative;
-  top: 10px;
+  top: -12px;
 }
 
 input {
+  padding-top: 4px;
   width: 180px;
 }
 

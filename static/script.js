@@ -40,6 +40,10 @@ $(document).ready(function() {
 function updatePuzzle(value) {
   puzzle = value;
   if (puzzle == undefined) {
+    $('#title').html('');
+    $('#author').html('');
+    $('#board').html('');
+    $('#upload-form').removeClass('hidden');
     return;
   }
   $('#title').html(puzzle.title);
@@ -55,6 +59,7 @@ function updatePuzzle(value) {
     }
   }
   $('#board').html(board_html);
+  $('#upload-form').addClass('hidden');
 }
 
 function getSquare(puzzle, i, j) {

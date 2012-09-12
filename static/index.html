@@ -32,10 +32,13 @@
       </div>
       <form id='upload-form' enctype='multipart/form-data' action='/upload'
             method='post' target='trick-iframe'>
+        <span>Upload a .puz file, then share the URL with a friend!</span>
+        <br>
         <input type='text' name='uid' id='uid-text' class='hidden' />
         <input type='file' name='puz' />
         <button type='submit'>Upload a .puz file</button>
       </form>
       <iframe class='hidden' name='trick-iframe'></iframe>
+    </div>
   </body>
 </html>
