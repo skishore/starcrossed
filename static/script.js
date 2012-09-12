@@ -1,6 +1,7 @@
 var uid;
 var socket;
 var pid;
+var puzzle;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
@@ -14,15 +15,14 @@ $(document).ready(function() {
   });
 
   socket.on('pid', function(message) {
-    result = JSON.parse(message);
+    var result = JSON.parse(message);
     if (result.uid == uid) {
       window.location.hash = result.pid;
     }
   });
 
   socket.on('get_puzzle', function(message) {
-    result = JSON.parse(message);
-    console.debug(result);
+    updatePuzzle(JSON.parse(message));
   });
 
   socket.on('disconnect', function() {
@@ -36,6 +36,27 @@ $(document).ready(function() {
     readPIDFromHash();
   });
 });
+
+function updatePuzzle(value) {
+  puzzle = value;
+  board_html = '';
+  $('#board').html('');
+  for (var i = 0; i < puzzle.height; i++) {
+    for (var j = 0; j < puzzle.width; j++) {
+      var color = (puzzle.board[i][j] == '.' ? 'black' : 'white');
+      var contents = '';
+      if (puzzle.board[i][j] != '.' && puzzle.board[i][j] != '-') {
+        contents = '<p>' + puzzle.board[i][j] + '</p>';
+      }
+      board_html += ('<div id="square' + i + '-' + j + '" class="' +
+                     color + ' square">' + contents + '</div>');
+    }
+    if (i + 1 < puzzle.height) {
+      board_html += '<br>';
+    }
+  }
+  $('#board').html(board_html);
+}
 
 function readPIDFromHash() {
   var param = window.location.hash;
