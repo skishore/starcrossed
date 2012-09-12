@@ -42,8 +42,9 @@ function updatePuzzle(value) {
   if (puzzle == undefined) {
     return;
   }
+  $('#title').html(puzzle.title);
+  $('#author').html('by ' + puzzle.author);
   $('#board').html('');
-
   board_html = '';
   for (var i = 0; i < puzzle.height; i++) {
     for (var j = 0; j < puzzle.width; j++) {

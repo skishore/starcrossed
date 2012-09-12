@@ -1,8 +1,10 @@
 div.status {
   padding: 2px;
-  height: 18px;
+  margin-bottom:4px;
+  height: 14px;
   border-style: solid;
   border-width: 1px;
+  font-size: 12px;
 }
 
 div.status.waiting {
@@ -22,8 +24,23 @@ div.status.disconnected {
   color: #440000;
 }
 
+#title-div {
+  text-align: center;
+}
+
+#title {
+  margin: 0px;
+  font-family: "Goudy Old Style", Garamond, "Big Caslon", serif;
+  font-size: 20px;
+}
+
+#author {
+  margin: 0px;
+  font-family: Parkavenue, cursive;
+}
+
 #board-outer-wrapper {
-  margin-top: 10px;
+  margin-top: 4px;
   text-align: center;
 }
 
