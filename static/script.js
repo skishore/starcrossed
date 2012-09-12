@@ -123,6 +123,6 @@ function getKeys(dict) {
 }
 
 function buildClue(num, clue) {
-  return ('<div><span class="clue-number">' + num + '.</span' +
+  return ('<div><span class="clue-number">' + num + '.</span>' +
           '<div class="clue">' + clue  + '</div></div>');
 }
