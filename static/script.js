@@ -37,14 +37,30 @@ $(document).ready(function() {
   });
 });
 
+function readPIDFromHash() {
+  var param = window.location.hash;
+  if (param.length > 1) {
+    pid = param.slice(1);
+    socket.emit('get_puzzle', pid);
+  } else {
+    pid = undefined;
+    updatePuzzle(undefined);
+  }
+}
+
+/* ----------------------------------------------------
+// Graphics code begins here!
+---------------------------------------------------- */
+
 function updatePuzzle(value) {
   puzzle = value;
   if (puzzle == undefined) {
-    $('#title').html('');
-    $('#author').html('');
-    $('#upload-form').removeClass('hidden');
+    $('#board-outer-wrapper').addClass('hidden');
+    $('#upload-form-div').removeClass('hidden');
     return;
   }
+  $('#board-outer-wrapper').removeClass('hidden');
+  $('#upload-form-div').addClass('hidden');
   $('#title').html(puzzle.title);
   $('#author').html('by ' + puzzle.author);
   $('#board').html('');
@@ -60,7 +76,6 @@ function updatePuzzle(value) {
   $('#board').html(board_html);
   buildCluesList(puzzle.accross, 'accross');
   buildCluesList(puzzle.down, 'down');
-  $('#upload-form').addClass('hidden');
 }
 
 function buildSquare(puzzle, i, j) {
@@ -110,15 +125,4 @@ function getKeys(dict) {
 function buildClue(num, clue) {
   return ('<div><span class="clue-number">' + num + '.</span' +
           '<div class="clue">' + clue  + '</div></div>');
-}
-
-function readPIDFromHash() {
-  var param = window.location.hash;
-  if (param.length > 1) {
-    pid = param.slice(1);
-    socket.emit('get_puzzle', pid);
-  } else {
-    pid = undefined;
-    updatePuzzle(undefined);
-  }
 }

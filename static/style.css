@@ -120,6 +120,11 @@ p.contents {
   text-transform: uppercase;
 }
 
+#upload-form-div {
+  margin-top: 16px;
+  text-align: center;
+}
+
 form {
   position: relative;
   top: -12px;
