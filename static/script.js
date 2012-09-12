@@ -101,7 +101,7 @@ function buildSquare(puzzle, i, j) {
 }
 
 function buildCluesList(cluesDict, listDiv) {
-  var height = $('#board').height()/2 - 2;
+  var height = $('#board').height()/2 - 19;
   var keys = getKeys(cluesDict);
   var source = [];
   for (var i = 0; i < keys.length; i++) {
