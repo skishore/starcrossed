@@ -1,4 +1,29 @@
+div.status {
+  padding: 2px;
+  height: 18px;
+  border-style: solid;
+  border-width: 1px;
+}
+
+div.status.waiting {
+  background-color: lightgray;
+  border-color: gray;
+}
+
+div.status.connected {
+  background-color: #CCFFCC;
+  border-color: #88CC88;
+  color: #004400;
+}
+
+div.status.disconnected {
+  background-color: #FFCCCC;
+  border-color: red;
+  color: #440000;
+}
+
 #board-outer-wrapper {
+  margin-top: 10px;
   text-align: center;
 }
 
