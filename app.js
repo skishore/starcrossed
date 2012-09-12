@@ -62,7 +62,7 @@ function parse_puzzle_data(data) {
     puzzle.annotation.push([]);
     for (var j = 0; j < puzzle.width; j++) {
       puzzle.board[i].push(board_str[i*puzzle.width + j]);
-      puzzle.annotation[i].push(puzzle.board[i][j]);
+      puzzle.annotation[i].push('');
     }
   }
   // Parse the title, author, and copyright strings.

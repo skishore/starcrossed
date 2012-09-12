@@ -39,17 +39,15 @@ $(document).ready(function() {
 
 function updatePuzzle(value) {
   puzzle = value;
-  board_html = '';
+  if (puzzle == undefined) {
+    return;
+  }
   $('#board').html('');
+
+  board_html = '';
   for (var i = 0; i < puzzle.height; i++) {
     for (var j = 0; j < puzzle.width; j++) {
-      var color = (puzzle.board[i][j] == '.' ? 'black' : 'white');
-      var contents = '';
-      if (puzzle.board[i][j] != '.' && puzzle.board[i][j] != '-') {
-        contents = '<p>' + puzzle.board[i][j] + '</p>';
-      }
-      board_html += ('<div id="square' + i + '-' + j + '" class="' +
-                     color + ' square">' + contents + '</div>');
+      board_html += getSquare(puzzle, i, j);
     }
     if (i + 1 < puzzle.height) {
       board_html += '<br>';
@@ -58,10 +56,35 @@ function updatePuzzle(value) {
   $('#board').html(board_html);
 }
 
+function getSquare(puzzle, i, j) {
+  var square_class = 'white square';
+  var square_number = '&nbsp';
+  var contents = '';
+  if (puzzle.board[i][j] == '.') {
+    square_class = 'black square';
+  } else {
+    if (puzzle.annotation[i][j] != '') {
+      square_number = '' + puzzle.annotation[i][j];
+    }
+    if (puzzle.board[i][j] != '-') {
+      contents = puzzle.board[i][j];
+    }
+  }
+  var id = '' + i + '-' + j;
+  var inner_html = ('<p class="number">' + square_number + '</p>' +
+                    '<p id="contents' + id + '" class="contents">' +
+                    contents + '</p>');
+  return ('<div id="square' + id + '" class="' + square_class + '">' +
+          inner_html + '</div>');
+}
+
 function readPIDFromHash() {
   var param = window.location.hash;
   if (param.length > 1) {
     pid = param.slice(1);
     socket.emit('get_puzzle', pid);
+  } else {
+    pid = undefined;
+    updatePuzzle(undefined);
   }
 }
