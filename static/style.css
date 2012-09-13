@@ -110,12 +110,12 @@ div.black {
 }
 
 div.other-highlight {
-  background-color: #CCCCCC;
+  background-color: #C4C4C4;
   border-color: #666666;
 }
 
-div.other-cursor.white {
-  background-color: #AAAAAA;
+div.other-cursor {
+  background-color: #999999;
   border-color: #444444;
 }
 
@@ -129,7 +129,7 @@ div.highlight {
   border-color: red;
 }
 
-div.cursor.white {
+div.cursor {
   background-color: #FF6666;
   border-color: #880000;
 }
