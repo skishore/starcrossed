@@ -43,7 +43,6 @@ $(document).ready(function() {
 
   socket.on('set_board', function(message) {
     update = JSON.parse(message);
-    console.debug(update);
     if (puzzle && update.pid == puzzle.pid) {
       setBoard(Square(update.i, update.j), update.val, true);
     }
@@ -327,6 +326,8 @@ function typeAndMove(val, move) {
 }
 
 function setInputHandlers() {
+  clearInputHandlers();
+
   $('#accross').bind('select', function(event) {
     if (event.args && event.args.item) {
       var square = findClueByNumber(event.args.item.value);
