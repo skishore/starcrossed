@@ -225,7 +225,11 @@ function findClueByNumber(clueNumber) {
 
 function setBoard(square, val) {
   puzzle.board[square.i][square.j] = val;
-  $('#contents' + square.i + '-' + square.j).html(val);
+  if (val == '-') {
+    $('#contents' + square.i + '-' + square.j).html('');
+  } else {
+    $('#contents' + square.i + '-' + square.j).html(val);
+  }
 }
 
 function setCursor(square, isAccross, force) {
@@ -280,6 +284,16 @@ function drawCurrentClues(clues) {
   }
 }
 
+function typeAndMove(val, move) {
+  if (board(state.square) != '.') {
+    setBoard(state.square, val);
+    var square = move(state.square);
+    if (square.inRange && board(square) != '.') {
+      setCursor(square, state.isAccross);
+    }
+  }
+}
+
 function setInputHandlers() {
   $('#accross').bind('select', function(event) {
     if (event.args && event.args.item) {
@@ -306,14 +320,10 @@ function setInputHandlers() {
       event.preventDefault();
     } else if (event.which >= 65 && event.which < 91) {
       var letter = String.fromCharCode(event.which);
-      if (board(state.square) != '.') {
-        setBoard(state.square, letter);
-        var move = (state.isAccross ? right : down);
-        var square = move(state.square);
-        if (square.inRange && board(square) != '.') {
-          setCursor(square, state.isAccross);
-        }
-      }
+      typeAndMove(letter, (state.isAccross ? right : down));
+    } else if (event.which == 8) {
+      typeAndMove('-', (state.isAccross ? left : up));
+      event.preventDefault();
     }
   });
 
