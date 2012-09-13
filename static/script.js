@@ -15,7 +15,6 @@ var lock = true;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
-  state = {square: Square(0, 0), isAccross: true, accross: {}, down: {}};
   $('#uid-text').val(uid);
   socket = io.connect();
 
@@ -37,7 +36,7 @@ $(document).ready(function() {
     if (response == 'not found') {
       window.location.hash = '';
     } else {
-      updatePuzzle(response);
+      setPuzzle(response);
     }
   });
 
@@ -45,6 +44,13 @@ $(document).ready(function() {
     update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid) {
       setBoard(Square(update.i, update.j), update.val, true);
+    }
+  });
+
+  socket.on('set_cursor', function(message) {
+    update = JSON.parse(message);
+    if (puzzle && update.pid == puzzle.pid && update.uid != uid) {
+      setCursor(Square(update.i, update.j), update.isAccross, update.uid);
     }
   });
 
@@ -65,7 +71,7 @@ function readPIDFromHash() {
   if (param.length > 1) {
     socket.emit('get_puzzle', param.slice(1));
   } else {
-    updatePuzzle(undefined);
+    setPuzzle(undefined);
   }
 }
 
@@ -73,7 +79,7 @@ function readPIDFromHash() {
 // Graphics code begins here!
 ---------------------------------------------------- */
 
-function updatePuzzle(new_puzzle) {
+function setPuzzle(new_puzzle) {
   puzzle = new_puzzle;
   if (!puzzle) {
     $('#board-outer-wrapper').addClass('hidden');
@@ -81,6 +87,9 @@ function updatePuzzle(new_puzzle) {
     clearInputHandlers();
     return;
   }
+
+  state = {square: Square(0, 0), isAccross: true,
+           accross: {}, down: {}, others: {}};
 
   $('#board-outer-wrapper').removeClass('hidden');
   $('#upload-form-div').addClass('hidden');
@@ -241,14 +250,23 @@ function setBoard(square, val, other) {
   }
 
   if (!other) {
-    message = JSON.stringify(
-        {pid: puzzle.pid, i: square.i, j: square.j, val: val});
-    socket.emit('set_board', message);
+    update = {pid: puzzle.pid, i: square.i, j: square.j, val: val};
+    socket.emit('set_board', JSON.stringify(update));
   }
 }
 
-function setCursor(square, isAccross, force) {
-  if (lock) {
+function setCursor(square, isAccross, other) {
+  if (other) {
+    // Doing a remote update. Simply draw the cursor.
+    if (state.others.hasOwnProperty(other)) {
+      drawCursor(state.others[other].square,
+                 state.others[other].isAccross, true);
+    }
+    state.others[other] = {square: square, isAccross: isAccross};
+    drawCursor(square, isAccross, false);
+  } else if (lock) {
+    // Doing a local cursor position update. Pick up the semaphore
+    // to avoid a cascade of update -> select clues -> update...
     lock = false;
     drawCursor(state.square, state.isAccross, true);
     state.isAccross = isAccross;
@@ -258,6 +276,10 @@ function setCursor(square, isAccross, force) {
     drawCursor(state.square, state.isAccross, false);
     drawCurrentClues(whichClues(state.square, state.isAccross));
     lock = true;
+
+    update = {uid: uid, pid: puzzle.pid, i: square.i,
+              j: square.j, isAccross: isAccross};
+    socket.emit('set_cursor', JSON.stringify(update));
   }
 }
 
@@ -332,7 +354,7 @@ function setInputHandlers() {
     if (event.args && event.args.item) {
       var square = findClueByNumber(event.args.item.value);
       if (square != null) {
-        setCursor(square, true, true);
+        setCursor(square, true);
       }
     }
   });
@@ -341,7 +363,7 @@ function setInputHandlers() {
     if (event.args && event.args.item) {
       var square = findClueByNumber(event.args.item.value);
       if (square != null) {
-        setCursor(square, false, true);
+        setCursor(square, false);
       }
     }
   });

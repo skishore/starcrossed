@@ -151,4 +151,8 @@ io.sockets.on('connection', function (socket) {
       socket.broadcast.emit('set_board', message);
     }
   });
+
+  socket.on('set_cursor', function(message) {
+    socket.broadcast.emit('set_cursor', message);
+  });
 });
