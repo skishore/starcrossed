@@ -14,7 +14,7 @@ var puzzle;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
-  state = {square: Square(0, 0), isAccross: true};
+  state = {square: Square(0, 0), isAccross: true, accross: {}, down: {}};
   $('#uid-text').val(uid);
   socket = io.connect();
 
@@ -124,13 +124,15 @@ function buildCluesList(cluesDict, listDiv) {
   }
   $('#' + listDiv).jqxListBox({source: source, theme: 'starcrossed',
                                width: 264, height: height});
+  state[listDiv].keys = keys;
 }
 
+// Only works if the dictionary is keyed by integers or integral strings.
 function getKeys(dict) {
   var keys = [];
   for (var key in dict) {
     if (dict.hasOwnProperty(key)) {
-      keys.push(key);
+      keys.push(parseInt(key));
     }
   }
   keys.sort(function(a, b) {return a - b;});
@@ -189,18 +191,23 @@ function clueSquares(cursor, isAccross) {
 }
 
 // The input square should be in range.
-function whichClue(cursor, isAccross) {
-  var move = (isAccross ? left : up);
-  var square = cursor;
-  var last = '';
-  while (square.inRange && board(square) != '.') {
-    last = annotation(square);
-    square = move(square);
+function whichClues(cursor, isAccross) {
+  var moves = (isAccross ? [left, up] : [up, left]);
+  var results = [];
+  for (var i = 0; i < 2; i++) {
+    var square = cursor;
+    var last = '';
+    while (square.inRange && board(square) != '.') {
+      last = annotation(square);
+      square = moves[i](square);
+    }
+    if (last == '') {
+      results.push(null);
+    } else {
+      results.push([last, (moves[i] == left ? 'accross' : 'down')]);
+    }
   }
-  if (last == '') {
-    return null;
-  }
-  return [last, (isAccross ? 'accross' : 'down')];
+  return results;
 }
 
 function setCursor(square, isAccross) {
@@ -216,8 +223,7 @@ function setCursor(square, isAccross) {
     state.square = square;
   }
   drawCursor(state.square, state.isAccross, false);
-
-  console.debug(whichClue(state.square, state.isAccross));
+  drawCurrentClues(whichClues(state.square, state.isAccross));
 }
 
 function drawCursor(cursor, isAccross, erase) {
@@ -232,6 +238,17 @@ function drawCursor(cursor, isAccross, erase) {
       highlights[i].div.addClass('highlight');
     }
     cursor.div.addClass('cursor');
+  }
+}
+
+function drawCurrentClues(clues) {
+  for (var i = 0; i < 2; i++) {
+    var clue = clues[i];
+    if (clue != null) {
+      var index = state[clue[1]].keys.indexOf(clue[0]);
+      $('#' + clue[1]).jqxListBox('selectIndex', index);
+      $('#' + clue[1]).jqxListBox('ensureVisible', index);
+    }
   }
 }
 
