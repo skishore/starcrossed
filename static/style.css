@@ -109,34 +109,34 @@ div.black {
   border-color: black;
 }
 
-div.highlight {
-  background-color: #FFAAAA;
-  border-color: red;
-}
-
-div.cursor.white {
-  background-color: #FF4444;
-  border-color: #440000;
-}
-
-div.cursor.black {
-  background-color: #AA0000;
-  border-color: #440000;
-}
-
 div.other-highlight {
-  background-color: #AAAAAA;
-  border-color: gray;
+  background-color: #CCCCCC;
+  border-color: #666666;
 }
 
 div.other-cursor.white {
-  background-color: #888888;
+  background-color: #AAAAAA;
   border-color: #444444;
 }
 
 div.other-cursor.black {
   background-color: #222222;
   border-color: #000000;
+}
+
+div.highlight {
+  background-color: #FFAAAA;
+  border-color: red;
+}
+
+div.cursor.white {
+  background-color: #FF6666;
+  border-color: #880000;
+}
+
+div.cursor.black {
+  background-color: #AA0000;
+  border-color: #440000;
 }
 
 p.number {
