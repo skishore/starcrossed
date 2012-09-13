@@ -124,6 +124,21 @@ div.cursor.black {
   border-color: #440000;
 }
 
+div.other-highlight {
+  background-color: #AAAAAA;
+  border-color: gray;
+}
+
+div.other-cursor.white {
+  background-color: #888888;
+  border-color: #444444;
+}
+
+div.other-cursor.black {
+  background-color: #222222;
+  border-color: #000000;
+}
+
 p.number {
   margin: 0px;
   padding-left: 1px;

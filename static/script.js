@@ -260,10 +260,10 @@ function setCursor(square, isAccross, other) {
     // Doing a remote update. Simply draw the cursor.
     if (state.others.hasOwnProperty(other)) {
       drawCursor(state.others[other].square,
-                 state.others[other].isAccross, true);
+                 state.others[other].isAccross, true, true);
     }
     state.others[other] = {square: square, isAccross: isAccross};
-    drawCursor(square, isAccross, false);
+    drawCursor(square, isAccross, false, true);
   } else if (lock) {
     // Doing a local cursor position update. Pick up the semaphore
     // to avoid a cascade of update -> select clues -> update...
@@ -283,18 +283,20 @@ function setCursor(square, isAccross, other) {
   }
 }
 
-function drawCursor(cursor, isAccross, erase) {
+function drawCursor(cursor, isAccross, erase, other) {
+  var cursorClass = (other ? 'other-cursor' : 'cursor');
+  var highlightClass = (other ? 'other-highlight' : 'highlight');
   highlights = clueSquares(cursor, isAccross);
   if (erase) {
     for (var i = 0; i < highlights.length; i++) {
-      highlights[i].div.removeClass('cursor highlight');
+      highlights[i].div.removeClass(cursorClass + ' ' + highlightClass);
     }
-    cursor.div.removeClass('cursor highlight');
+    cursor.div.removeClass(cursorClass + ' ' + highlightClass);
   } else {
     for (var i = 0; i < highlights.length; i++) {
-      highlights[i].div.addClass('highlight');
+      highlights[i].div.addClass(highlightClass);
     }
-    cursor.div.addClass('cursor');
+    cursor.div.addClass(cursorClass);
   }
 }
 
