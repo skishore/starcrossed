@@ -80,6 +80,7 @@ div.status.disconnected {
 
 .inactive-clue {
   background-color: white;
+  border-color: black;
   color: black;
 }
 

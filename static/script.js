@@ -330,10 +330,12 @@ function drawCurrentClues(clues) {
       var id = '#' + clue[1];
       $(id).jqxListBox('selectIndex', index);
       $(id).jqxListBox('ensureVisible', index);
+      var element = $($(id).jqxListBox('getSelectedItem').element);
       if (i == 0) {
-        $($(id).jqxListBox('getSelectedItem').element).removeClass('inactive-clue');
+        element.removeClass('inactive-clue');
       } else {
-        $($(id).jqxListBox('getSelectedItem').element).addClass('inactive-clue');
+        $(id).jqxListBox('clearSelection');
+        element.addClass('inactive-clue');
       }
     }
   }
