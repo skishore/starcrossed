@@ -11,6 +11,7 @@ var state;
 var socket;
 var pid;
 var puzzle;
+var lock = true;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
@@ -210,20 +211,36 @@ function whichClues(cursor, isAccross) {
   return results;
 }
 
-function setCursor(square, isAccross) {
-  drawCursor(state.square, state.isAccross, true);
-  if (board(state.square) == '.') {
-    state.isAccross = isAccross;
-    if (square.inRange) {
+// Returns the square at which the clue is found.
+function findClueByNumber(clueNumber) {
+  for (var i = 0; i < puzzle.height; i++) {
+    for (var j = 0; j < puzzle.height; j++) {
+      if (puzzle.annotation[i][j] == clueNumber) {
+        return Square(i, j);
+      }
+    }
+  }
+  return null;
+}
+
+function setCursor(square, isAccross, force) {
+  if (lock) {
+    lock = false;
+    drawCursor(state.square, state.isAccross, true);
+    if (board(state.square) == '.' || force) {
+      state.isAccross = isAccross;
+      if (square.inRange) {
+        state.square = square;
+      }
+    } else if (state.isAccross != isAccross) {
+      state.isAccross = isAccross;
+    } else if (square.inRange) {
       state.square = square;
     }
-  } else if (state.isAccross != isAccross) {
-    state.isAccross = isAccross;
-  } else if (square.inRange) {
-    state.square = square;
+    drawCursor(state.square, state.isAccross, false);
+    drawCurrentClues(whichClues(state.square, state.isAccross));
+    lock = true;
   }
-  drawCursor(state.square, state.isAccross, false);
-  drawCurrentClues(whichClues(state.square, state.isAccross));
 }
 
 function drawCursor(cursor, isAccross, erase) {
@@ -252,7 +269,6 @@ function drawCurrentClues(clues) {
       if (i == 0) {
         $($(id).jqxListBox('getSelectedItem').element).removeClass('inactive-clue');
       } else {
-        console.debug($($(id).jqxListBox('getSelectedItem').element));
         $($(id).jqxListBox('getSelectedItem').element).addClass('inactive-clue');
       }
     }
@@ -260,6 +276,24 @@ function drawCurrentClues(clues) {
 }
 
 function setInputHandlers() {
+  $('#accross').bind('select', function(event) {
+    if (event.args && event.args.item) {
+      var square = findClueByNumber(event.args.item.value);
+      if (square != null) {
+        setCursor(square, true, true);
+      }
+    }
+  });
+
+  $('#down').bind('select', function(event) {
+    if (event.args && event.args.item) {
+      var square = findClueByNumber(event.args.item.value);
+      if (square != null) {
+        setCursor(square, false, true);
+      }
+    }
+  });
+
   $('#board').keydown(function(event) {
     if (moves.hasOwnProperty(event.which)) {
       setCursor(moves[event.which](state.square),
