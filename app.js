@@ -152,7 +152,7 @@ io.sockets.on('connection', function (socket) {
     var update = JSON.parse(message);
     if (puzzles.hasOwnProperty(update.pid)) {
       puzzles[update.pid].board[update.i][update.j] = update.val;
-      socket.broadcast.emit('set_board', message);
+      io.sockets.emit('set_board', message);
     }
   });
 
