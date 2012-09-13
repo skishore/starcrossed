@@ -22,8 +22,9 @@ app.post('/upload', function(req, res) {
       if (err) {
         console.error('Could not open file: %s', err);
       } else {
-        var puzzle = parse_puzzle_data(data);
         var pid = Math.floor((1 << 30)*Math.random());
+        var puzzle = parse_puzzle_data(data);
+        puzzle.pid = pid;
         puzzles[pid] = puzzle;
         var message = JSON.stringify({uid: uid, pid: pid});
         io.sockets.emit('pid', message);
@@ -138,6 +139,8 @@ io.sockets.on('connection', function (socket) {
   socket.on('get_puzzle', function(pid) {
     if (puzzles.hasOwnProperty(pid)) {
       socket.emit('get_puzzle', JSON.stringify(puzzles[pid]));
+    } else {
+      socket.emit('get_puzzle', JSON.stringify('not found'));
     }
   });
 });

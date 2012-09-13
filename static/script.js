@@ -9,7 +9,6 @@ var squareRegex = /^square([0-9]*)-([0-9]*)$/;
 var uid;
 var state;
 var socket;
-var pid;
 var puzzle;
 var lock = true;
 
@@ -33,8 +32,12 @@ $(document).ready(function() {
   });
 
   socket.on('get_puzzle', function(message) {
-    puzzle = JSON.parse(message);
-    updatePuzzle(puzzle);
+    response = JSON.parse(message);
+    if (response == 'not found') {
+      window.location.hash = '';
+    } else {
+      updatePuzzle(response);
+    }
   });
 
   socket.on('disconnect', function() {
@@ -52,12 +55,9 @@ $(document).ready(function() {
 function readPIDFromHash() {
   var param = window.location.hash;
   if (param.length > 1) {
-    pid = param.slice(1);
-    socket.emit('get_puzzle', pid);
+    socket.emit('get_puzzle', param.slice(1));
   } else {
-    pid = undefined;
-    puzzle = undefined;
-    updatePuzzle(puzzle);
+    updatePuzzle(undefined);
   }
 }
 
@@ -65,12 +65,15 @@ function readPIDFromHash() {
 // Graphics code begins here!
 ---------------------------------------------------- */
 
-function updatePuzzle(puzzle) {
+function updatePuzzle(new_puzzle) {
+  puzzle = new_puzzle;
   if (puzzle == undefined) {
     $('#board-outer-wrapper').addClass('hidden');
     $('#upload-form-div').removeClass('hidden');
+    clearInputHandlers();
     return;
   }
+
   $('#board-outer-wrapper').removeClass('hidden');
   $('#upload-form-div').addClass('hidden');
   $('#title').html(puzzle.title);
@@ -327,4 +330,11 @@ function setInputHandlers() {
     event.preventDefault();
     $('#board').focus();
   });
+}
+
+function clearInputHandlers() {
+  $('#accross').unbind('select');
+  $('#down').unbind('select');
+  $('#board').unbind('keydown');
+  $('#board').unbind('mousedown');
 }
