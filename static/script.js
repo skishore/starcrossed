@@ -246,8 +246,15 @@ function drawCurrentClues(clues) {
     var clue = clues[i];
     if (clue != null) {
       var index = state[clue[1]].keys.indexOf(clue[0]);
-      $('#' + clue[1]).jqxListBox('selectIndex', index);
-      $('#' + clue[1]).jqxListBox('ensureVisible', index);
+      var id = '#' + clue[1];
+      $(id).jqxListBox('selectIndex', index);
+      $(id).jqxListBox('ensureVisible', index);
+      if (i == 0) {
+        $($(id).jqxListBox('getSelectedItem').element).removeClass('inactive-clue');
+      } else {
+        console.debug($($(id).jqxListBox('getSelectedItem').element));
+        $($(id).jqxListBox('getSelectedItem').element).addClass('inactive-clue');
+      }
     }
   }
 }

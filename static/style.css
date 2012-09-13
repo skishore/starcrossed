@@ -78,6 +78,11 @@ div.status.disconnected {
   white-space: normal;
 }
 
+.inactive-clue {
+  background-color: white;
+  color: black;
+}
+
 #board {
   float: right;
 }
