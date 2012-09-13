@@ -124,6 +124,7 @@ p.number {
   padding-left: 1px;
   line-height: 10px;
   font-size: 10px;
+  pointer-events: none;
 }
 
 p.contents {
@@ -132,6 +133,7 @@ p.contents {
   line-height: 18px;
   font-size: 20px;
   text-transform: uppercase;
+  pointer-events: none;
 }
 
 *:focus {

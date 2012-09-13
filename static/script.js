@@ -4,6 +4,8 @@ var moves = {left: function(square) {return Square(square.i, square.j - 1)},
              up: function(square) {return Square(square.i - 1, square.j)},
              right: function(square) {return Square(square.i, square.j + 1)},
              down: function(square) {return Square(square.i + 1, square.j)}};
+var squareRegex = /^square([0-9]*)-([0-9]*)$/;
+
 var uid;
 var state;
 var socket;
@@ -220,7 +222,17 @@ function setInputHandlers() {
     }
   });
 
-  $('#board').mouseup(function(event) {
-    console.debug('Got mouse event');
+  $('#board').mousedown(function(event) {
+    var target = squareRegex.exec(event.target.id);
+    if (target != null) {
+      var square = Square(parseInt(target[1]), parseInt(target[2]))
+      if (square.i != state.square.i || square.j != state.square.j) {
+        setCursor(square, state.isAccross);
+      } else {
+        setCursor(state.square, !state.isAccross);
+      }
+    }
+    event.preventDefault();
+    $('#board').focus();
   });
 }
