@@ -52,7 +52,7 @@ $(document).ready(function() {
   socket.on('set_board', function(message) {
     update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid) {
-      setBoard(Square(update.i, update.j), update.val, true);
+      setBoard(Square(update.i, update.j), update.val, update.uid);
     }
   });
 
@@ -111,7 +111,7 @@ function setPuzzle(new_puzzle) {
   }
 
   state = {square: Square(0, 0), isAccross: true,
-           accross: {}, down: {}, others: {}};
+           accross: {}, down: {}, others: {}, isLocal: []};
 
   $('#board-outer-wrapper').removeClass('hidden');
   $('#upload-form-div').addClass('hidden');
@@ -120,8 +120,10 @@ function setPuzzle(new_puzzle) {
   $('#board').html('');
   board_html = '';
   for (var i = 0; i < puzzle.height; i++) {
+    state.isLocal.push([]);
     for (var j = 0; j < puzzle.width; j++) {
       board_html += buildSquare(puzzle, i, j);
+      state.isLocal[i].push(true);
     }
     if (i + 1 < puzzle.height) {
       board_html += '<br>';
@@ -262,6 +264,15 @@ function findClueByNumber(clueNumber) {
 }
 
 function setBoard(square, val, other) {
+  if (other) {
+    if (other == uid && state.isLocal[square.i][square.j]) {
+      return;
+    }
+    state.isLocal[square.i][square.j] = false;
+  } else {
+    state.isLocal[square.i][square.j] = true;
+  }
+
   if (puzzle.board[square.i][square.j] != val) {
     puzzle.board[square.i][square.j] = val;
     if (val == '-') {
@@ -272,7 +283,8 @@ function setBoard(square, val, other) {
   }
 
   if (!other) {
-    update = {pid: puzzle.pid, i: square.i, j: square.j, val: val};
+    update = {uid: uid, pid: puzzle.pid, i: square.i,
+              j: square.j, val: val};
     socket.emit('set_board', JSON.stringify(update));
   }
 }
