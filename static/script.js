@@ -54,6 +54,15 @@ $(document).ready(function() {
     }
   });
 
+  socket.on('lost_user', function(message) {
+    update = JSON.parse(message);
+    if (puzzle && update.pid == puzzle.pid &&
+        state.others.hasOwnProperty(update.uid)) {
+      var other = state.others[update.uid];
+      drawCursor(other.square, other.isAccross, true, true);
+    }
+  });
+
   socket.on('disconnect', function() {
     $('#status').html('Disconnected. The server is probably down.');
     $('#status').removeClass('waiting connected');
@@ -69,7 +78,8 @@ $(document).ready(function() {
 function readPIDFromHash() {
   var param = window.location.hash;
   if (param.length > 1) {
-    socket.emit('get_puzzle', param.slice(1));
+    request = {uid: uid, pid: param.slice(1)};
+    socket.emit('get_puzzle', JSON.stringify(request));
   } else {
     setPuzzle(undefined);
   }

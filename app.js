@@ -136,9 +136,12 @@ function StringParser(buffer, offset) {
 var io = sio.listen(web_server, {log: false})
 var nicknames = {};
 io.sockets.on('connection', function (socket) {
-  socket.on('get_puzzle', function(pid) {
-    if (puzzles.hasOwnProperty(pid)) {
-      socket.emit('get_puzzle', JSON.stringify(puzzles[pid]));
+  socket.on('get_puzzle', function(message) {
+    var request = JSON.parse(message);
+    socket.uid = request.uid;
+    if (puzzles.hasOwnProperty(request.pid)) {
+      socket.pid = request.pid;
+      socket.emit('get_puzzle', JSON.stringify(puzzles[request.pid]));
     } else {
       socket.emit('get_puzzle', JSON.stringify('not found'));
     }
@@ -154,5 +157,14 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('set_cursor', function(message) {
     socket.broadcast.emit('set_cursor', message);
+  });
+
+  socket.on('disconnect', function() {
+    if (socket.hasOwnProperty('uid') && socket.hasOwnProperty('pid')) {
+      console.log('User ' + socket.uid +
+                  ' disconnected from puzzle ' + socket.pid);
+      update = {uid: socket.uid, pid: socket.pid};
+      socket.broadcast.emit('lost_user', JSON.stringify(update));
+    }
   });
 });
