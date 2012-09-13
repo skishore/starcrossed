@@ -27,6 +27,7 @@ app.post('/upload', function(req, res) {
         puzzles[pid] = puzzle;
         var message = JSON.stringify({uid: uid, pid: pid});
         io.sockets.emit('pid', message);
+        console.log('Created puzzle ' + pid);
       }
     });
   } else if (puz_file.size) {

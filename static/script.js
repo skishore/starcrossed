@@ -164,11 +164,8 @@ function annotation(square) {
 }
 
 // The input square should be in range.
-function board(square, val) {
-  if (val == undefined) {
-    return puzzle.board[square.i][square.j];
-  }
-  puzzle.board[square.i][square.j] = val;
+function board(square) {
+  return puzzle.board[square.i][square.j];
 }
 
 // The input square should be in range.
@@ -221,6 +218,11 @@ function findClueByNumber(clueNumber) {
     }
   }
   return null;
+}
+
+function setBoard(square, val) {
+  puzzle.board[square.i][square.j] = val;
+  $('#contents' + square.i + '-' + square.j).html(val);
 }
 
 function setCursor(square, isAccross, force) {
@@ -299,6 +301,16 @@ function setInputHandlers() {
       setCursor(moves[event.which](state.square),
                 isAccrossKey[event.which]);
       event.preventDefault();
+    } else if (event.which >= 65 && event.which < 91) {
+      var letter = String.fromCharCode(event.which);
+      if (board(state.square) != '.') {
+        setBoard(state.square, letter);
+        var move = (state.isAccross ? right : down);
+        var square = move(state.square);
+        if (square.inRange && board(square) != '.') {
+          setCursor(square, state.isAccross);
+        }
+      }
     }
   });
 
