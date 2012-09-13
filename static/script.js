@@ -84,6 +84,10 @@ $(document).ready(function() {
   });
 });
 
+$(window).bind('beforeunload', function() {
+  socket.disconnect();
+});
+
 function readPIDFromHash() {
   var param = window.location.hash;
   if (param.length > 1) {
