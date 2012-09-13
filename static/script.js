@@ -205,7 +205,12 @@ function whichClue(cursor, isAccross) {
 
 function setCursor(square, isAccross) {
   drawCursor(state.square, state.isAccross, true);
-  if (state.isAccross != isAccross) {
+  if (board(state.square) == '.') {
+    state.isAccross = isAccross;
+    if (square.inRange) {
+      state.square = square;
+    }
+  } else if (state.isAccross != isAccross) {
     state.isAccross = isAccross;
   } else if (square.inRange) {
     state.square = square;
