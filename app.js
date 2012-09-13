@@ -143,4 +143,12 @@ io.sockets.on('connection', function (socket) {
       socket.emit('get_puzzle', JSON.stringify('not found'));
     }
   });
+
+  socket.on('set_board', function(message) {
+    var update = JSON.parse(message);
+    if (puzzles.hasOwnProperty(update.pid)) {
+      puzzles[update.pid].board[update.i][update.j] = update.val;
+      socket.broadcast.emit('set_board', message);
+    }
+  });
 });

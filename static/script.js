@@ -41,6 +41,14 @@ $(document).ready(function() {
     }
   });
 
+  socket.on('set_board', function(message) {
+    update = JSON.parse(message);
+    console.debug(update);
+    if (puzzle && update.pid == puzzle.pid) {
+      setBoard(Square(update.i, update.j), update.val, true);
+    }
+  });
+
   socket.on('disconnect', function() {
     $('#status').html('Disconnected. The server is probably down.');
     $('#status').removeClass('waiting connected');
@@ -68,7 +76,7 @@ function readPIDFromHash() {
 
 function updatePuzzle(new_puzzle) {
   puzzle = new_puzzle;
-  if (puzzle == undefined) {
+  if (!puzzle) {
     $('#board-outer-wrapper').addClass('hidden');
     $('#upload-form-div').removeClass('hidden');
     clearInputHandlers();
@@ -155,8 +163,7 @@ function buildClue(num, clue) {
 
 function Square(i, j) {
   var result = {i: i, j: j}
-  result.inRange = (puzzle != undefined &&
-                    i >= 0 && i < puzzle.height &&
+  result.inRange = (puzzle && i >= 0 && i < puzzle.height &&
                     j >= 0 && j < puzzle.width);
   result.div = $('#square' + i + '-' + j);
   return result;
@@ -224,12 +231,20 @@ function findClueByNumber(clueNumber) {
   return null;
 }
 
-function setBoard(square, val) {
-  puzzle.board[square.i][square.j] = val;
-  if (val == '-') {
-    $('#contents' + square.i + '-' + square.j).html('');
-  } else {
-    $('#contents' + square.i + '-' + square.j).html(val);
+function setBoard(square, val, other) {
+  if (puzzle.board[square.i][square.j] != val) {
+    puzzle.board[square.i][square.j] = val;
+    if (val == '-') {
+      $('#contents' + square.i + '-' + square.j).html('');
+    } else {
+      $('#contents' + square.i + '-' + square.j).html(val);
+    }
+  }
+
+  if (!other) {
+    message = JSON.stringify(
+        {pid: puzzle.pid, i: square.i, j: square.j, val: val});
+    socket.emit('set_board', message);
   }
 }
 
