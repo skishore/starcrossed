@@ -1,10 +1,8 @@
-var moves = {37: function(square) {return Square(square.i, square.j - 1)},
-             left: function(square) {return Square(square.i, square.j - 1)},
-             38: function(square) {return Square(square.i - 1, square.j)},
+var keys = {37: 'left', 38: 'up', 39: 'right', 40: 'down'};
+var isAccrossKey = {37: true, 38: false, 39: true, 40: false};
+var moves = {left: function(square) {return Square(square.i, square.j - 1)},
              up: function(square) {return Square(square.i - 1, square.j)},
-             39: function(square) {return Square(square.i, square.j + 1)},
              right: function(square) {return Square(square.i, square.j + 1)},
-             40: function(square) {return Square(square.i + 1, square.j)},
              down: function(square) {return Square(square.i + 1, square.j)}};
 var uid;
 var state;
@@ -14,7 +12,7 @@ var puzzle;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
-  state = {square: Square(0, 0)};
+  state = {square: Square(0, 0), isAccross: true};
   $('#uid-text').val(uid);
   socket = io.connect();
 
@@ -89,7 +87,7 @@ function updatePuzzle(puzzle) {
   buildCluesList(puzzle.down, 'down');
 
   // Update the current state and set input handlers.
-  setCursor(Square(0, 0));
+  setCursor(Square(0, 0), true);
   setInputHandlers();
 }
 
@@ -169,34 +167,37 @@ function board(square, val) {
 }
 
 // The input square should be in range.
-function clueSquares(square) {
+function clueSquares(square, isAccross) {
   if (board(square) == '.') {
     return [];
   }
+  var directions = (isAccross ? ['left', 'right'] : ['up', 'down'])
   var results = []
-  var square = moves.left(square);
+  var square = moves[directions[0]](square);
   while (square.inRange && board(square) != '.') {
     results.push(square);
-    square = moves.left(square);
+    square = moves[directions[0]](square);
   }
-  square = moves.right(square);
+  square = moves[directions[1]](square);
   while (square.inRange && board(square) != '.') {
     results.push(square);
-    square = moves.right(square);
+    square = moves[directions[1]](square);
   }
   return results;
 }
 
-function setCursor(square) {
-  if (square.inRange) {
-    drawCursor(state.square, state.direction, true);
+function setCursor(square, isAccross) {
+  drawCursor(state.square, state.isAccross, true);
+  if (state.isAccross != isAccross) {
+    state.isAccross = isAccross;
+  } else if (square.inRange) {
     state.square = square;
-    drawCursor(state.square, state.direction, false);
   }
+  drawCursor(state.square, state.isAccross, false);
 }
 
-function drawCursor(cursor, direction, erase) {
-  highlights = clueSquares(cursor, direction);
+function drawCursor(cursor, isAccross, erase) {
+  highlights = clueSquares(cursor, isAccross);
   if (erase) {
     for (var i = 0; i < highlights.length; i++) {
       highlights[i].div.removeClass('cursor highlight');
@@ -212,8 +213,9 @@ function drawCursor(cursor, direction, erase) {
 
 function setInputHandlers() {
   $('#board').keydown(function(event) {
-    if (moves.hasOwnProperty(event.which)) {
-      setCursor(moves[event.which](state.square));
+    if (keys.hasOwnProperty(event.which)) {
+      setCursor(moves[keys[event.which]](state.square),
+                isAccrossKey[event.which]);
       event.preventDefault();
     }
   });
