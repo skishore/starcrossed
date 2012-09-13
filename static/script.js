@@ -1,9 +1,9 @@
-var keys = {37: 'left', 38: 'up', 39: 'right', 40: 'down'};
+var left = function(square) {return Square(square.i, square.j - 1)};
+var up = function(square) {return Square(square.i - 1, square.j)};
+var right = function(square) {return Square(square.i, square.j + 1)};
+var down = function(square) {return Square(square.i + 1, square.j)};
+var moves = {37: left, 38: up, 39: right, 40: down};
 var isAccrossKey = {37: true, 38: false, 39: true, 40: false};
-var moves = {left: function(square) {return Square(square.i, square.j - 1)},
-             up: function(square) {return Square(square.i - 1, square.j)},
-             right: function(square) {return Square(square.i, square.j + 1)},
-             down: function(square) {return Square(square.i + 1, square.j)}};
 var squareRegex = /^square([0-9]*)-([0-9]*)$/;
 
 var uid;
@@ -157,7 +157,7 @@ function Square(i, j) {
 
 // The input square should be in range.
 function annotation(square) {
-  return puzzle.board[square.i][square.j];
+  return puzzle.annotation[square.i][square.j];
 }
 
 // The input square should be in range.
@@ -169,23 +169,38 @@ function board(square, val) {
 }
 
 // The input square should be in range.
-function clueSquares(square, isAccross) {
-  if (board(square) == '.') {
+function clueSquares(cursor, isAccross) {
+  if (board(cursor) == '.') {
     return [];
   }
-  var directions = (isAccross ? ['left', 'right'] : ['up', 'down'])
+  var moves = (isAccross ? [left, right] : [up, down])
   var results = []
-  var square = moves[directions[0]](square);
+  var square = moves[0](cursor);
   while (square.inRange && board(square) != '.') {
     results.push(square);
-    square = moves[directions[0]](square);
+    square = moves[0](square);
   }
-  square = moves[directions[1]](square);
+  square = moves[1](cursor);
   while (square.inRange && board(square) != '.') {
     results.push(square);
-    square = moves[directions[1]](square);
+    square = moves[1](square);
   }
   return results;
+}
+
+// The input square should be in range.
+function whichClue(cursor, isAccross) {
+  var move = (isAccross ? left : up);
+  var square = cursor;
+  var last = '';
+  while (square.inRange && board(square) != '.') {
+    last = annotation(square);
+    square = move(square);
+  }
+  if (last == '') {
+    return null;
+  }
+  return [last, (isAccross ? 'accross' : 'down')];
 }
 
 function setCursor(square, isAccross) {
@@ -196,6 +211,8 @@ function setCursor(square, isAccross) {
     state.square = square;
   }
   drawCursor(state.square, state.isAccross, false);
+
+  console.debug(whichClue(state.square, state.isAccross));
 }
 
 function drawCursor(cursor, isAccross, erase) {
@@ -215,8 +232,8 @@ function drawCursor(cursor, isAccross, erase) {
 
 function setInputHandlers() {
   $('#board').keydown(function(event) {
-    if (keys.hasOwnProperty(event.which)) {
-      setCursor(moves[keys[event.which]](state.square),
+    if (moves.hasOwnProperty(event.which)) {
+      setCursor(moves[event.which](state.square),
                 isAccrossKey[event.which]);
       event.preventDefault();
     }
