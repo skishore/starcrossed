@@ -94,25 +94,29 @@ div.square {
   text-align: left;
 }
 
-div.black {
-  background-color: black;
-  border-color: black;
-}
-
 div.white {
   background-color: white;
   border-color: black;
 }
 
-div.selected.black {
-  background-color: #EE0000;
-  border-color: darkred;
-  color: red;
+div.black {
+  background-color: black;
+  border-color: black;
 }
 
-div.selected.white {
-  background-color: pink;
+div.highlight {
+  background-color: #FFAAAA;
   border-color: red;
+}
+
+div.cursor.white {
+  background-color: #FF4444;
+  border-color: #440000;
+}
+
+div.cursor.black {
+  background-color: #AA0000;
+  border-color: #440000;
 }
 
 p.number {
@@ -128,6 +132,10 @@ p.contents {
   line-height: 18px;
   font-size: 20px;
   text-transform: uppercase;
+}
+
+*:focus {
+  outline: none;
 }
 
 #upload-form-div {

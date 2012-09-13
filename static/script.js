@@ -1,10 +1,20 @@
+var moves = {37: function(square) {return Square(square.i, square.j - 1)},
+             left: function(square) {return Square(square.i, square.j - 1)},
+             38: function(square) {return Square(square.i - 1, square.j)},
+             up: function(square) {return Square(square.i - 1, square.j)},
+             39: function(square) {return Square(square.i, square.j + 1)},
+             right: function(square) {return Square(square.i, square.j + 1)},
+             40: function(square) {return Square(square.i + 1, square.j)},
+             down: function(square) {return Square(square.i + 1, square.j)}};
 var uid;
+var state;
 var socket;
 var pid;
 var puzzle;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
+  state = {square: Square(0, 0)};
   $('#uid-text').val(uid);
   socket = io.connect();
 
@@ -22,7 +32,8 @@ $(document).ready(function() {
   });
 
   socket.on('get_puzzle', function(message) {
-    updatePuzzle(JSON.parse(message));
+    puzzle = JSON.parse(message);
+    updatePuzzle(puzzle);
   });
 
   socket.on('disconnect', function() {
@@ -44,7 +55,8 @@ function readPIDFromHash() {
     socket.emit('get_puzzle', pid);
   } else {
     pid = undefined;
-    updatePuzzle(undefined);
+    puzzle = undefined;
+    updatePuzzle(puzzle);
   }
 }
 
@@ -52,8 +64,7 @@ function readPIDFromHash() {
 // Graphics code begins here!
 ---------------------------------------------------- */
 
-function updatePuzzle(value) {
-  puzzle = value;
+function updatePuzzle(puzzle) {
   if (puzzle == undefined) {
     $('#board-outer-wrapper').addClass('hidden');
     $('#upload-form-div').removeClass('hidden');
@@ -76,6 +87,10 @@ function updatePuzzle(value) {
   $('#board').html(board_html);
   buildCluesList(puzzle.accross, 'accross');
   buildCluesList(puzzle.down, 'down');
+
+  // Update the current state and set input handlers.
+  setCursor(Square(0, 0));
+  setInputHandlers();
 }
 
 function buildSquare(puzzle, i, j) {
@@ -125,4 +140,85 @@ function getKeys(dict) {
 function buildClue(num, clue) {
   return ('<div><span class="clue-number">' + num + '.</span>' +
           '<div class="clue">' + clue  + '</div></div>');
+}
+
+/* ----------------------------------------------------
+// Game code begins here!
+---------------------------------------------------- */
+
+function Square(i, j) {
+  var result = {i: i, j: j}
+  result.inRange = (puzzle != undefined &&
+                    i >= 0 && i < puzzle.height &&
+                    j >= 0 && j < puzzle.width);
+  result.div = $('#square' + i + '-' + j);
+  return result;
+}
+
+// The input square should be in range.
+function annotation(square) {
+  return puzzle.board[square.i][square.j];
+}
+
+// The input square should be in range.
+function board(square, val) {
+  if (val == undefined) {
+    return puzzle.board[square.i][square.j];
+  }
+  puzzle.board[square.i][square.j] = val;
+}
+
+// The input square should be in range.
+function clueSquares(square) {
+  if (board(square) == '.') {
+    return [];
+  }
+  var results = []
+  var square = moves.left(square);
+  while (square.inRange && board(square) != '.') {
+    results.push(square);
+    square = moves.left(square);
+  }
+  square = moves.right(square);
+  while (square.inRange && board(square) != '.') {
+    results.push(square);
+    square = moves.right(square);
+  }
+  return results;
+}
+
+function setCursor(square) {
+  if (square.inRange) {
+    drawCursor(state.square, state.direction, true);
+    state.square = square;
+    drawCursor(state.square, state.direction, false);
+  }
+}
+
+function drawCursor(cursor, direction, erase) {
+  highlights = clueSquares(cursor, direction);
+  if (erase) {
+    for (var i = 0; i < highlights.length; i++) {
+      highlights[i].div.removeClass('cursor highlight');
+    }
+    cursor.div.removeClass('cursor highlight');
+  } else {
+    for (var i = 0; i < highlights.length; i++) {
+      highlights[i].div.addClass('highlight');
+    }
+    cursor.div.addClass('cursor');
+  }
+}
+
+function setInputHandlers() {
+  $('#board').keydown(function(event) {
+    if (moves.hasOwnProperty(event.which)) {
+      setCursor(moves[event.which](state.square));
+      event.preventDefault();
+    }
+  });
+
+  $('#board').mouseup(function(event) {
+    console.debug('Got mouse event');
+  });
 }
