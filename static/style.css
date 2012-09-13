@@ -175,6 +175,10 @@ input {
   width: 180px;
 }
 
+.center {
+  text-align: center;
+}
+
 .hidden {
   position: absolute;
   left: 0px;

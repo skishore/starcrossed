@@ -32,6 +32,7 @@ $(document).ready(function() {
   });
 
   socket.on('get_puzzle', function(message) {
+    $('#loader').addClass('hidden');
     response = JSON.parse(message);
     if (response == 'not found') {
       window.location.hash = '';
@@ -80,6 +81,9 @@ function readPIDFromHash() {
   if (param.length > 1) {
     request = {uid: uid, pid: param.slice(1)};
     socket.emit('get_puzzle', JSON.stringify(request));
+    $('#board-outer-wrapper').addClass('hidden');
+    $('#upload-form-div').addClass('hidden');
+    $('#loader').removeClass('hidden');
   } else {
     setPuzzle(undefined);
   }

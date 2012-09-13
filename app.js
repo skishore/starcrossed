@@ -161,8 +161,8 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('disconnect', function() {
     if (socket.hasOwnProperty('uid') && socket.hasOwnProperty('pid')) {
-      console.log('User ' + socket.uid +
-                  ' disconnected from puzzle ' + socket.pid);
+      //console.log('User ' + socket.uid +
+      //            ' disconnected from puzzle ' + socket.pid);
       update = {uid: socket.uid, pid: socket.pid};
       socket.broadcast.emit('lost_user', JSON.stringify(update));
     }
