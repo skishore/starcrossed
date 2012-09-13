@@ -160,7 +160,7 @@ p.contents {
   outline: none;
 }
 
-#upload-form-div {
+.center-spaced {
   margin-top: 16px;
   text-align: center;
 }
@@ -173,10 +173,6 @@ form {
 input {
   padding-top: 4px;
   width: 180px;
-}
-
-.center {
-  text-align: center;
 }
 
 .hidden {
