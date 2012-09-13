@@ -142,6 +142,7 @@ io.sockets.on('connection', function (socket) {
     if (puzzles.hasOwnProperty(request.pid)) {
       socket.pid = request.pid;
       socket.emit('get_puzzle', JSON.stringify(puzzles[request.pid]));
+      socket.broadcast.emit('where_are_you', request.pid);
     } else {
       socket.emit('get_puzzle', JSON.stringify('not found'));
     }
