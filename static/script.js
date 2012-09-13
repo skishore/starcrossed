@@ -369,6 +369,7 @@ function setInputHandlers() {
         setCursor(square, true);
       }
     }
+    $('#board').focus();
   });
 
   $('#down').bind('select', function(event) {
@@ -378,6 +379,7 @@ function setInputHandlers() {
         setCursor(square, false);
       }
     }
+    $('#board').focus();
   });
 
   $('#board').keydown(function(event) {
@@ -409,6 +411,8 @@ function setInputHandlers() {
     event.preventDefault();
     $('#board').focus();
   });
+
+  $('#board').focus();
 }
 
 function clearInputHandlers() {
