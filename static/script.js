@@ -5,6 +5,7 @@ var down = function(square) {return Square(square.i + 1, square.j)};
 var moves = {37: left, 38: up, 39: right, 40: down};
 var isAccrossKey = {37: true, 38: false, 39: true, 40: false};
 var squareRegex = /^square([0-9]*)-([0-9]*)$/;
+var moveOnBlack = false;
 
 var uid;
 var state;
@@ -236,14 +237,8 @@ function setCursor(square, isAccross, force) {
   if (lock) {
     lock = false;
     drawCursor(state.square, state.isAccross, true);
-    if (board(state.square) == '.' || force) {
-      state.isAccross = isAccross;
-      if (square.inRange) {
-        state.square = square;
-      }
-    } else if (state.isAccross != isAccross) {
-      state.isAccross = isAccross;
-    } else if (square.inRange) {
+    state.isAccross = isAccross;
+    if (square.inRange) {
       state.square = square;
     }
     drawCursor(state.square, state.isAccross, false);
@@ -284,6 +279,28 @@ function drawCurrentClues(clues) {
   }
 }
 
+function oldMoveCursor(move, isAccross) {
+  if (isAccross != state.isAccross) {
+    setCursor(state.square, isAccross);
+  } else {
+    setCursor(move(state.square), state.isAccross);
+  }
+}
+
+function newMoveCursor(move, isAccross) {
+  if (isAccross != state.isAccross) {
+    setCursor(state.square, isAccross);
+  } else {
+    var square = move(state.square);
+    while (square.inRange && board(square) == '.') {
+      square = move(square);
+    }
+    if (square.inRange) {
+      setCursor(square, state.isAccross);
+    }
+  }
+}
+
 function typeAndMove(val, move) {
   if (board(state.square) != '.') {
     setBoard(state.square, val);
@@ -315,8 +332,8 @@ function setInputHandlers() {
 
   $('#board').keydown(function(event) {
     if (moves.hasOwnProperty(event.which)) {
-      setCursor(moves[event.which](state.square),
-                isAccrossKey[event.which]);
+      var moveCursor = (moveOnBlack ? oldMoveCursor : newMoveCursor);
+      moveCursor(moves[event.which], isAccrossKey[event.which]);
       event.preventDefault();
     } else if (event.which >= 65 && event.which < 91) {
       var letter = String.fromCharCode(event.which);
@@ -332,7 +349,9 @@ function setInputHandlers() {
     if (target != null) {
       var square = Square(parseInt(target[1]), parseInt(target[2]))
       if (square.i != state.square.i || square.j != state.square.j) {
-        setCursor(square, state.isAccross);
+        if (moveOnBlack || (square.inRange && board(square) != '.')) {
+          setCursor(square, state.isAccross);
+        }
       } else {
         setCursor(state.square, !state.isAccross);
       }
