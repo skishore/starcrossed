@@ -133,16 +133,52 @@ function StringParser(buffer, offset) {
   return result;
 }
 
+var puzzle_members = {};
+
+function broadcast_to_puzzle_members(pid, type, message) {
+  if (puzzle_members.hasOwnProperty(pid)) {
+    for (var uid in puzzle_members[pid]) {
+      puzzle_members[pid][uid].emit(type, message);
+    }
+  }
+}
+
+function join(pid, socket) {
+  if (socket.pid != pid) {
+    socket.pid = pid;
+    var message = JSON.stringify({pid: pid, uid: socket.uid});
+    broadcast_to_puzzle_members(pid, 'join', message);
+    if (!puzzle_members.hasOwnProperty(pid)) {
+      puzzle_members[pid] = {};
+    }
+    puzzle_members[pid][socket.uid] = socket;
+  }
+}
+
+function leave(pid, socket) {
+  if (socket.pid == pid) {
+    if (puzzle_members.hasOwnProperty(pid) &&
+        puzzle_members[pid].hasOwnProperty(socket.uid)) {
+      delete puzzle_members[pid][socket.uid];
+      if (Object.keys(puzzle_members[pid]).length == 0) {
+        delete puzzle_members[pid];
+      }
+    }
+    var message = JSON.stringify({pid: pid, uid: socket.uid});
+    broadcast_to_puzzle_members(pid, 'leave', message);
+    delete socket.pid;
+  }
+}
+
 var io = sio.listen(web_server, {log: false})
-var nicknames = {};
 io.sockets.on('connection', function (socket) {
   socket.on('get_puzzle', function(message) {
     var request = JSON.parse(message);
     socket.uid = request.uid;
+    leave(socket.pid, socket);
     if (puzzles.hasOwnProperty(request.pid)) {
-      socket.pid = request.pid;
       socket.emit('get_puzzle', JSON.stringify(puzzles[request.pid]));
-      socket.broadcast.emit('where_are_you', request.pid);
+      join(request.pid, socket);
     } else {
       socket.emit('get_puzzle', JSON.stringify('not found'));
     }
@@ -150,22 +186,28 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('set_board', function(message) {
     var update = JSON.parse(message);
+    join(update.pid, socket);
     if (puzzles.hasOwnProperty(update.pid)) {
       puzzles[update.pid].board[update.i][update.j] = update.val;
-      io.sockets.emit('set_board', message);
+      broadcast_to_puzzle_members(update.pid, 'set_board', message);
     }
   });
 
   socket.on('set_cursor', function(message) {
-    socket.broadcast.emit('set_cursor', message);
+    var update = JSON.parse(message);
+    join(update.pid, socket);
+    broadcast_to_puzzle_members(update.pid, 'set_cursor', message);
+  });
+
+  socket.on('leave', function() {
+    if (socket.hasOwnProperty('uid') && socket.hasOwnProperty('pid')) {
+      leave(socket.pid, socket);
+    }
   });
 
   socket.on('disconnect', function() {
     if (socket.hasOwnProperty('uid') && socket.hasOwnProperty('pid')) {
-      //console.log('User ' + socket.uid +
-      //            ' disconnected from puzzle ' + socket.pid);
-      update = {uid: socket.uid, pid: socket.pid};
-      socket.broadcast.emit('lost_user', JSON.stringify(update));
+      leave(socket.pid, socket);
     }
   });
 });

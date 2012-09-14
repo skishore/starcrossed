@@ -41,30 +41,32 @@ $(document).ready(function() {
     }
   });
 
-  socket.on('where_are_you', function(pid) {
-    if (puzzle && pid == puzzle.pid) {
-      update = {uid: uid, pid: puzzle.pid, i: state.square.i,
-                j: state.square.j, isAccross: state.isAccross};
-      socket.emit('set_cursor', JSON.stringify(update));
+  socket.on('join', function(message) {
+    var update = JSON.parse(message);
+    if (puzzle && update.pid == puzzle.pid) {
+      myPos = {uid: uid, pid: puzzle.pid, i: state.square.i,
+               j: state.square.j, isAccross: state.isAccross};
+      socket.emit('set_cursor', JSON.stringify(myPos));
+      setCursor(Square(0, 0), true, update.uid);
     }
   });
 
   socket.on('set_board', function(message) {
-    update = JSON.parse(message);
+    var update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid) {
       setBoard(Square(update.i, update.j), update.val, update.uid);
     }
   });
 
   socket.on('set_cursor', function(message) {
-    update = JSON.parse(message);
+    var update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid && update.uid != uid) {
       setCursor(Square(update.i, update.j), update.isAccross, update.uid);
     }
   });
 
-  socket.on('lost_user', function(message) {
-    update = JSON.parse(message);
+  socket.on('leave', function(message) {
+    var update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid &&
         state.others.hasOwnProperty(update.uid)) {
       var other = state.others[update.uid];
@@ -113,6 +115,7 @@ function setPuzzle(new_puzzle) {
     $('#board-outer-wrapper').addClass('hidden');
     $('#upload-form-div').removeClass('hidden');
     clearInputHandlers();
+    socket.emit('leave');
     return;
   }
 
