@@ -68,7 +68,8 @@ $(document).ready(function() {
     if (puzzle && update.pid == puzzle.pid &&
         state.others.hasOwnProperty(update.uid)) {
       var other = state.others[update.uid];
-      drawCursor(other.square, other.isAccross, true, true);
+      drawCursor(other.square, other.isAccross, true, update.uid);
+      delete state.others[update.uid];
     }
   });
 
@@ -85,6 +86,7 @@ $(document).ready(function() {
 });
 
 $(window).bind('beforeunload', function() {
+  socket.emit('leave');
   socket.disconnect();
 });
 
@@ -298,10 +300,10 @@ function setCursor(square, isAccross, other) {
     // Doing a remote update. Simply draw the cursor.
     if (state.others.hasOwnProperty(other)) {
       drawCursor(state.others[other].square,
-                 state.others[other].isAccross, true, true);
+                 state.others[other].isAccross, true, other);
     }
     state.others[other] = {square: square, isAccross: isAccross};
-    drawCursor(square, isAccross, false, true);
+    drawCursor(square, isAccross, false, other);
   } else if (lock) {
     // Doing a local cursor position update. Pick up the semaphore
     // to avoid a cascade of update -> select clues -> update...
@@ -335,6 +337,14 @@ function drawCursor(cursor, isAccross, erase, other) {
       highlights[i].div.addClass(highlightClass);
     }
     cursor.div.addClass(cursorClass);
+  }
+
+  if (erase && other) {
+    for (var i in state.others) {
+      if (i != other) {
+        drawCursor(state.others[i].square, state.others[i].isAccross, false, i);
+      }
+    }
   }
 }
 
