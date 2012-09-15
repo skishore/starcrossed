@@ -79,9 +79,9 @@ div.status.disconnected {
 }
 
 .inactive-clue {
-  background-color: white;
+  background-color: #444444;
   border-color: black;
-  color: black;
+  color: white;
 }
 
 #board {
