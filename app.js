@@ -144,7 +144,7 @@ function broadcast_to_puzzle_members(pid, type, message) {
 }
 
 function join(pid, socket) {
-  if (socket.pid != pid) {
+  if (socket.pid != pid && puzzles.hasOwnProperty(pid)) {
     socket.pid = pid;
     var message = JSON.stringify({pid: pid, uid: socket.uid});
     broadcast_to_puzzle_members(pid, 'join', message);
@@ -153,10 +153,14 @@ function join(pid, socket) {
     }
     puzzle_members[pid][socket.uid] = socket;
   }
+  socket.old = false;
+  if (puzzles.hasOwnProperty(pid)) {
+    puzzles[pid].old = false;
+  }
 }
 
 function leave(pid, socket) {
-  if (socket.pid == pid) {
+  if (socket.pid == pid && puzzles.hasOwnProperty(pid)) {
     if (puzzle_members.hasOwnProperty(pid) &&
         puzzle_members[pid].hasOwnProperty(socket.uid)) {
       delete puzzle_members[pid][socket.uid];
@@ -211,3 +215,27 @@ io.sockets.on('connection', function (socket) {
     }
   });
 });
+
+function vacuum() {
+  // Remove sockets that have not called join() in a while.
+  for (var pid in puzzle_members) {
+    for (var uid in puzzle_members[pid]) {
+      var socket = puzzle_members[pid][uid];
+      if (socket.old) {
+        socket.disconnect();
+      } else {
+        socket.old = true;
+      }
+    }
+  }
+
+  // Remove puzzles that have had no members for a while.
+  for (var pid in puzzles) {
+    if (puzzles[pid].old && !puzzle_members.hasOwnProperty(pid)) {
+      delete puzzles[pid];
+    } else {
+      puzzles[pid].old = true;
+    }
+  }
+}
+setInterval(vacuum, 3600*1000);
