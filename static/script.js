@@ -169,16 +169,16 @@ function buildSquare(puzzle, i, j) {
           inner_html + '</div>');
 }
 
-function buildCluesList(cluesDict, listDiv) {
+function buildCluesList(cluesDict, type) {
   var height = $('#board').height()/2 - 19;
   var keys = getKeys(cluesDict);
   var source = [];
   for (var i = 0; i < keys.length; i++) {
     source.push({html: buildClue(keys[i], cluesDict[keys[i]]), value: keys[i]});
   }
-  $('#' + listDiv).jqxListBox({source: source, theme: 'starcrossed',
+  $('#' + type).jqxListBox({source: source, theme: 'starcrossed',
                                width: 264, height: height});
-  state[listDiv].keys = keys;
+  state[type].keys = keys;
 }
 
 // Only works if the dictionary is keyed by integers or integral strings.
@@ -438,6 +438,19 @@ function setInputHandlers() {
       event.preventDefault();
     } else if (event.which == 32 || event.which == 46) {
       typeAndMove('-', (state.isAccross ? right : down));
+    } else if (event.which == 9) {
+      var type = (state.isAccross ? 'accross' : 'down');
+      var index = $('#' + type).jqxListBox('selectedIndex');
+      if (event.shiftKey) {
+        if (index > 0) {
+          $('#' + type).jqxListBox('selectIndex', index - 1);
+        }
+      } else {
+        if (index < state[type].keys.length - 1) {
+          $('#' + type).jqxListBox('selectIndex', index + 1);
+        }
+      }
+      event.preventDefault();
     }
   });
 
