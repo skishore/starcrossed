@@ -436,7 +436,7 @@ function setInputHandlers() {
     } else if (event.which == 8) {
       typeAndMove('-', (state.isAccross ? left : up));
       event.preventDefault();
-    } else if (event.which == 32) {
+    } else if (event.which == 32 || event.which == 46) {
       typeAndMove('-', (state.isAccross ? right : down));
     }
   });
