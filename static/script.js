@@ -4,12 +4,12 @@ var right = function(square) {return Square(square.i, square.j + 1)};
 var down = function(square) {return Square(square.i + 1, square.j)};
 var moves = {37: left, 38: up, 39: right, 40: down};
 var isAccrossKey = {37: true, 38: false, 39: true, 40: false};
-var squareRegex = /^square([0-9]*)-([0-9]*)$/;
 var moveOnBlack = false;
 
 var uid;
 var state;
 var socket;
+var canvas;
 var puzzle;
 var lock = true;
 
@@ -81,6 +81,7 @@ $(document).ready(function() {
     $('#status').addClass('disconnected');
   });
 
+  canvas = $('#board')[0].getContext('2d');
   readPIDFromHash();
   $(window).bind('hashchange', function() {
     readPIDFromHash();
@@ -120,25 +121,26 @@ function setPuzzle(new_puzzle) {
   }
 
   state = {square: Square(0, 0), isAccross: true,
-           accross: {}, down: {}, others: {}, isLocal: []};
+           accross: {}, down: {}, others: {},
+           isLocal: [], squareClass: []};
 
   $('#board-outer-wrapper').removeClass('hidden');
   $('#upload-form-div').addClass('hidden');
   $('#title').html(puzzle.title);
   $('#author').html('by ' + puzzle.author);
-  $('#board').html('');
-  board_html = '';
+  $('#board').width(28*puzzle.width);
+  $('#board').height(28*puzzle.height);
+  $('#board')[0].width = 28*puzzle.width;
+  $('#board')[0].height = 28*puzzle.height;
   for (var i = 0; i < puzzle.height; i++) {
     state.isLocal.push([]);
+    state.squareClass.push([]);
     for (var j = 0; j < puzzle.width; j++) {
-      board_html += buildSquare(puzzle, i, j);
       state.isLocal[i].push(true);
-    }
-    if (i + 1 < puzzle.height) {
-      board_html += '<br>';
+      state.squareClass[i].push([]);
+      drawSquare(i, j);
     }
   }
-  $('#board').html(board_html);
   buildCluesList(puzzle.accross, 'accross');
   buildCluesList(puzzle.down, 'down');
 
@@ -147,26 +149,49 @@ function setPuzzle(new_puzzle) {
   setInputHandlers();
 }
 
-function buildSquare(puzzle, i, j) {
-  var square_class = 'white square';
-  var square_number = '&nbsp';
-  var contents = '';
-  if (puzzle.board[i][j] == '.') {
-    square_class = 'black square';
-  } else {
-    if (puzzle.annotation[i][j] != '') {
-      square_number = '' + puzzle.annotation[i][j];
-    }
-    if (puzzle.board[i][j] != '-') {
-      contents = puzzle.board[i][j];
+function setSquareColor(i, j) {
+  var isBlack = (puzzle.board[i][j] == '.');
+  canvas.fillStyle = (isBlack ? 'black' : 'white');
+  canvas.strokeStyle = 'black';
+  for (var k = 0; k < state.squareClass[i][j].length; k++) {
+    var cls = state.squareClass[i][j][k];
+    if (cls == 'cursor') {
+      canvas.fillStyle = (isBlack ? '#AA0000' : '#FF6666');
+      canvas.strokeStyle = (isBlack ? '#440000' : '#880000');
+      return;
+    } else if (cls == 'highlight') {
+      canvas.fillStyle = '#FFAAAA';
+      canvas.strokeStyle = 'red';
+      return;
+    } else if (cls == 'other-cursor') {
+      canvas.fillStyle = (isBlack ? '#222222' : '#999999');
+      canvas.strokeStyle = (isBlack ? 'black' : '#444444');
+    } else if (cls == 'other-highlight') {
+      canvas.fillStyle = '#C4C4C4';
+      canvas.strokeStyle = '#666666';
     }
   }
-  var id = '' + i + '-' + j;
-  var inner_html = ('<p class="number">' + square_number + '</p>' +
-                    '<p id="contents' + id + '" class="contents">' +
-                    contents + '</p>');
-  return ('<div id="square' + id + '" class="' + square_class + '">' +
-          inner_html + '</div>');
+}
+
+function drawSquare(i, j) {
+  setSquareColor(i, j);
+  canvas.fillRect(28*j, 28*i, 28, 28);
+  canvas.strokeRect(28*j + 0.5, 28*i + 0.5, 27, 27);
+
+  canvas.fillStyle = 'black';
+  canvas.textBaseline = 'top';
+
+  if (puzzle.annotation[i][j] != '') {
+    canvas.font = '7.5pt serif';
+    canvas.textAlign = 'left';
+    canvas.fillText('' + puzzle.annotation[i][j], 28*j + 2, 28*i - 0.5);
+  }
+
+  if (puzzle.board[i][j] != '.' && puzzle.board[i][j] != '-') {
+    canvas.font = '16pt serif';
+    canvas.textAlign = 'center';
+    canvas.fillText(puzzle.board[i][j], 28*j + 15.5, 28*i + 6.5);
+  }
 }
 
 function buildCluesList(cluesDict, type) {
@@ -206,7 +231,22 @@ function Square(i, j) {
   var result = {i: i, j: j}
   result.inRange = (puzzle && i >= 0 && i < puzzle.height &&
                     j >= 0 && j < puzzle.width);
-  result.div = $('#square' + i + '-' + j);
+  result.draw = function() {
+    drawSquare(this.i, this.j);
+  }
+  result.addClass = function(cls) {
+    state.squareClass[i][j].push(cls);
+    this.draw();
+  }
+  result.removeClass = function(cls) {
+    var index = state.squareClass[i][j].indexOf(cls);
+    if (index >= 0) {
+      state.squareClass[i][j][index] =
+          state.squareClass[i][j][state.squareClass[i][j].length - 1];
+      state.squareClass[i][j].pop();
+    }
+    this.draw();
+  }
   return result;
 }
 
@@ -284,11 +324,7 @@ function setBoard(square, val, other) {
 
   if (puzzle.board[square.i][square.j] != val) {
     puzzle.board[square.i][square.j] = val;
-    if (val == '-') {
-      $('#contents' + square.i + '-' + square.j).html('');
-    } else {
-      $('#contents' + square.i + '-' + square.j).html(val);
-    }
+    square.draw();
   }
 
   if (!other) {
@@ -332,22 +368,14 @@ function drawCursor(cursor, isAccross, erase, other) {
   highlights = clueSquares(cursor, isAccross);
   if (erase) {
     for (var i = 0; i < highlights.length; i++) {
-      highlights[i].div.removeClass(cursorClass + ' ' + highlightClass);
+      highlights[i].removeClass(highlightClass);
     }
-    cursor.div.removeClass(cursorClass + ' ' + highlightClass);
+    cursor.removeClass(cursorClass);
   } else {
     for (var i = 0; i < highlights.length; i++) {
-      highlights[i].div.addClass(highlightClass);
+      highlights[i].addClass(highlightClass);
     }
-    cursor.div.addClass(cursorClass);
-  }
-
-  if (erase && other) {
-    for (var i in state.others) {
-      if (i != other) {
-        drawCursor(state.others[i].square, state.others[i].isAccross, false, i);
-      }
-    }
+    cursor.addClass(cursorClass);
   }
 }
 
@@ -455,9 +483,9 @@ function setInputHandlers() {
   });
 
   $('#board').mousedown(function(event) {
-    var target = squareRegex.exec(event.target.id);
-    if (target != null) {
-      var square = Square(parseInt(target[1]), parseInt(target[2]))
+    var square = Square(Math.floor(event.offsetY/28),
+                        Math.floor(event.offsetX/28));
+    if (square.inRange) {
       if (square.i != state.square.i || square.j != state.square.j) {
         if (moveOnBlack || (square.inRange && board(square) != '.')) {
           setCursor(square, state.isAccross);
