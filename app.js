@@ -57,14 +57,17 @@ function parse_puzzle_data(data) {
   // Parse the board from the data.
   var size = puzzle.height*puzzle.width;
   var board_str = data.slice(0x34 + size, 0x34 + 2*size).toString('ascii');
-  puzzle.board = []
-  puzzle.annotation = []
+  puzzle.board = [];
+  puzzle.annotation = [];
+  puzzle.lastEditor = [];
   for (var i = 0; i < puzzle.height; i++) {
     puzzle.board.push([]);
     puzzle.annotation.push([]);
+    puzzle.lastEditor.push([]);
     for (var j = 0; j < puzzle.width; j++) {
       puzzle.board[i].push(board_str[i*puzzle.width + j]);
       puzzle.annotation[i].push('');
+      puzzle.lastEditor.push(-1);
     }
   }
   // Parse the title, author, and copyright strings.
@@ -193,7 +196,13 @@ io.sockets.on('connection', function (socket) {
     join(update.pid, socket);
     if (puzzles.hasOwnProperty(update.pid)) {
       puzzles[update.pid].board[update.i][update.j] = update.val;
-      broadcast_to_puzzle_members(update.pid, 'set_board', message);
+      puzzles[update.pid].lastEditor[update.i][update.j] = socket.uid;
+      var response = JSON.stringify({
+          pid: update.pid,
+          board: puzzles[update.pid].board,
+          lastEditor: puzzles[update.pid].lastEditor
+        });
+      broadcast_to_puzzle_members(update.pid, 'board_state', response);
     }
   });
 
