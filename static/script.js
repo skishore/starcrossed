@@ -56,9 +56,9 @@ $(document).ready(function() {
     if (puzzle && update.pid == puzzle.pid) {
       for (var i = 0; i < puzzle.height; i++) {
         for (var j = 0; j < puzzle.width; j++) {
-          if (update.board[i][j] != puzzle.board[i][j] &&
-              (update.lastEditor[i][j] != uid || puzzle.lastEditor[i][j] != uid)) {
-            setBoard(Square(i, j), update.board[i][j], update.lastEditor[i][j]);
+          if (update.version[i][j] > puzzle.version[i][j]) {
+            setBoard(Square(i, j), update.board[i][j], false);
+            puzzle.version[i][j] = update.version[i][j];
           }
         }
       }
@@ -279,7 +279,7 @@ function findClueByNumber(clueNumber) {
   return null;
 }
 
-function setBoard(square, val, other) {
+function setBoard(square, val, local) {
   if (puzzle.board[square.i][square.j] != val) {
     puzzle.board[square.i][square.j] = val;
     if (val == '-') {
@@ -288,9 +288,8 @@ function setBoard(square, val, other) {
       $('#contents' + square.i + '-' + square.j).html(val);
     }
   }
-  puzzle.lastEditor[square.i][square.j] = other;
 
-  if (other == uid) {
+  if (local) {
     update = {uid: uid, pid: puzzle.pid, i: square.i,
               j: square.j, val: val};
     socket.emit('set_board', JSON.stringify(update));
@@ -393,7 +392,8 @@ function newMoveCursor(move, isAccross) {
 
 function typeAndMove(val, move) {
   if (board(state.square) != '.') {
-    setBoard(state.square, val, uid);
+    setBoard(state.square, val, true);
+    puzzle.version[state.square.i][state.square.j] += 1;
     var square = move(state.square);
     if (square.inRange && board(square) != '.') {
       setCursor(square, state.isAccross);
