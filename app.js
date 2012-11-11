@@ -6,13 +6,16 @@ var sio = require('socket.io');
 var puzzles = {};
 
 var app = express();
+
 app.configure(function() {
   app.use(express.static(__dirname + '/static'));
   app.use(express.bodyParser());
 });
+
 app.get('/', function(req, res) {
   res.render('index');
 });
+
 app.post('/upload', function(req, res) {
   var uid = req.body.uid;
   var puz_file = req.files.puz;
@@ -41,6 +44,7 @@ app.post('/upload', function(req, res) {
 });
 
 web_server = http.createServer(app);
+
 web_server.listen(3000, function () {
   var addr = web_server.address();
   console.log('Starcrossed server listening on',
@@ -178,6 +182,7 @@ function leave(pid, socket) {
 }
 
 var io = sio.listen(web_server, {log: false})
+
 io.sockets.on('connection', function (socket) {
   socket.on('get_puzzle', function(message) {
     var request = JSON.parse(message);

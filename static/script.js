@@ -126,8 +126,7 @@ function setPuzzle(new_puzzle) {
     return;
   }
 
-  state = {square: Square(0, 0), isAccross: true,
-           accross: {}, down: {}, others: {}, isLocal: []};
+  state = {square: Square(0, 0), isAccross: true, others: {}};
 
   $('#board-outer-wrapper').removeClass('hidden');
   $('#upload-form-div').addClass('hidden');
@@ -136,10 +135,8 @@ function setPuzzle(new_puzzle) {
   $('#board').html('');
   board_html = '';
   for (var i = 0; i < puzzle.height; i++) {
-    state.isLocal.push([]);
     for (var j = 0; j < puzzle.width; j++) {
       board_html += buildSquare(puzzle, i, j);
-      state.isLocal[i].push(true);
     }
     if (i + 1 < puzzle.height) {
       board_html += '<br>';
@@ -185,7 +182,7 @@ function buildCluesList(cluesDict, type) {
   }
   $('#' + type).jqxListBox({source: source, theme: 'starcrossed',
                                width: 264, height: height});
-  state[type].keys = keys;
+  puzzle[type + '_keys'] = keys;
 }
 
 // Only works if the dictionary is keyed by integers or integral strings.
@@ -353,7 +350,7 @@ function drawCurrentClues(clues) {
   for (var i = 0; i < 2; i++) {
     var clue = clues[i];
     if (clue != null) {
-      var index = state[clue[1]].keys.indexOf(clue[0]);
+      var index = puzzle[clue[1] + '_keys'].indexOf(clue[0]);
       var id = '#' + clue[1];
       $(id).jqxListBox('selectIndex', index);
       $(id).jqxListBox('ensureVisible', index);
@@ -445,7 +442,7 @@ function setInputHandlers() {
           $('#' + type).jqxListBox('selectIndex', index - 1);
         }
       } else {
-        if (index < state[type].keys.length - 1) {
+        if (index < puzzle[type + '_keys'].length - 1) {
           $('#' + type).jqxListBox('selectIndex', index + 1);
         }
       }
