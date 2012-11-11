@@ -51,7 +51,9 @@ $(document).ready(function() {
       html += buildOption('Error (see debug log)');
       console.debug('list_puzzles error:', result.err);
     } else {
-      for (var i = result.files.length - 1; i >= 0; i--) {
+      result.files.sort();
+      result.files.reverse();
+      for (var i = 0; i < result.files.length; i++) {
         html += buildOption(result.files[i]);
       }
     }
