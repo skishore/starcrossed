@@ -154,8 +154,6 @@ function broadcast_to_puzzle_members(pid, type, message) {
 function join(pid, socket) {
   if (socket.pid != pid && puzzles.hasOwnProperty(pid)) {
     socket.pid = pid;
-    var message = JSON.stringify({pid: pid, uid: socket.uid});
-    broadcast_to_puzzle_members(pid, 'join', message);
     if (!puzzle_members.hasOwnProperty(pid)) {
       puzzle_members[pid] = {};
     }
@@ -176,10 +174,35 @@ function leave(pid, socket) {
         delete puzzle_members[pid];
       }
     }
-    var message = JSON.stringify({pid: pid, uid: socket.uid});
-    broadcast_to_puzzle_members(pid, 'leave', message);
     delete socket.pid;
+
+    if (puzzles[pid].cursors.hasOwnProperty(socket.uid)) {
+      delete puzzles[pid].cursors[socket.uid];
+      var response = get_puzzle_state(puzzles[pid]);
+      broadcast_to_puzzle_members(pid, 'update_puzzle', response);
+    }
   }
+}
+
+function get_puzzle_state(puzzle) {
+  return JSON.stringify({
+      pid: puzzle.pid,
+      board: puzzle.board,
+      version: puzzle.version,
+      cursors: puzzle.cursors,
+  });
+}
+
+function sync(puzzle, update) {
+  for (var i = 0; i < puzzle.height; i++) {
+    for (var j = 0; j < puzzle.width; j++) {
+      if (update.version[i][j] > puzzle.version[i][j]) {
+        puzzle.board[i][j] = update.board[i][j];
+        puzzle.version[i][j] = update.version[i][j];
+      }
+    }
+  }
+  puzzle.cursors[update.uid] = update.cursors[update.uid];
 }
 
 var io = sio.listen(web_server, {log: false})
@@ -197,25 +220,14 @@ io.sockets.on('connection', function (socket) {
     }
   });
 
-  socket.on('set_board', function(message) {
+  socket.on('update_puzzle', function(message) {
     var update = JSON.parse(message);
     join(update.pid, socket);
     if (puzzles.hasOwnProperty(update.pid)) {
-      puzzles[update.pid].board[update.i][update.j] = update.val;
-      puzzles[update.pid].version[update.i][update.j] += 1;
-      var response = JSON.stringify({
-          pid: update.pid,
-          board: puzzles[update.pid].board,
-          version: puzzles[update.pid].version,
-        });
-      broadcast_to_puzzle_members(update.pid, 'board_state', response);
+      sync(puzzles[update.pid], update);
+      var response = get_puzzle_state(puzzles[update.pid]);
+      broadcast_to_puzzle_members(update.pid, 'update_puzzle', response);
     }
-  });
-
-  socket.on('set_cursor', function(message) {
-    var update = JSON.parse(message);
-    join(update.pid, socket);
-    broadcast_to_puzzle_members(update.pid, 'set_cursor', message);
   });
 
   socket.on('leave', function() {

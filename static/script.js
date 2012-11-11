@@ -1,7 +1,15 @@
-var left = function(square) {return Square(square.i, square.j - 1)};
-var up = function(square) {return Square(square.i - 1, square.j)};
-var right = function(square) {return Square(square.i, square.j + 1)};
-var down = function(square) {return Square(square.i + 1, square.j)};
+var left = function(square) {
+  return Square(square.i, square.j - 1)
+};
+var up = function(square) {
+  return Square(square.i - 1, square.j)
+};
+var right = function(square) {
+  return Square(square.i, square.j + 1)
+};
+var down = function(square) {
+  return Square(square.i + 1, square.j)
+};
 var moves = {37: left, 38: up, 39: right, 40: down};
 var isAcrossKey = {37: true, 38: false, 39: true, 40: false};
 var squareRegex = /^square([0-9]*)-([0-9]*)$/;
@@ -10,6 +18,17 @@ var uid;
 var socket;
 var puzzle;
 var locked = false;
+
+function send_puzzle_update() {
+  message = JSON.stringify({
+      uid: uid,
+      pid: puzzle.pid,
+      board: puzzle.board,
+      version: puzzle.version,
+      cursors: puzzle.cursors,
+  });
+  socket.emit('update_puzzle', message);
+}
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
@@ -39,45 +58,46 @@ $(document).ready(function() {
     }
   });
 
-  socket.on('join', function(message) {
+  socket.on('update_puzzle', function(message) {
     var update = JSON.parse(message);
-    if (puzzle && update.pid == puzzle.pid) {
-      //myPos = {uid: uid, pid: puzzle.pid, i: state.square.i,
-      //         j: state.square.j, isAcross: state.isAcross};
-      //socket.emit('set_cursor', JSON.stringify(myPos));
-      //setCursor(Square(0, 0), true, update.uid);
-    }
-  });
-
-  socket.on('board_state', function(message) {
-    var update = JSON.parse(message);
+    // This update has a copy of all of the puzzle's mutable state: the entries
+    // in the board, the version of each cell, and the cursor positions. The
+    // code below syncs these updates on the client side.
     if (puzzle && update.pid == puzzle.pid) {
       for (var i = 0; i < puzzle.height; i++) {
         for (var j = 0; j < puzzle.width; j++) {
+          // If the update version is the same as the local version, but the
+          // value is different, another player's update overwrote ours.
           if (update.version[i][j] > puzzle.version[i][j] ||
               (update.version[i][j] == puzzle.version[i][j] &&
                update.board[i][j] != puzzle.board[i][j])) {
-            setBoard(Square(i, j), update.board[i][j], false);
+            setBoard(Square(i, j), update.board[i][j]);
             puzzle.version[i][j] = update.version[i][j];
           }
         }
       }
-    }
-  });
 
-  socket.on('set_cursor', function(message) {
-    var update = JSON.parse(message);
-    if (puzzle && update.pid == puzzle.pid && update.uid != uid) {
-      setCursor(Square(update.i, update.j), update.isAcross, update.uid);
-    }
-  });
+      // Redraw any cursors other than our own if their position has changed.
+      for (var i in update.cursors) {
+        if (update.cursors.hasOwnProperty(i) && i != uid) {
+          var cursor = update.cursors[i];
+          if (!puzzle.cursors.hasOwnProperty(i) ||
+              puzzle.cursors[i].square.i != cursor.square.i ||
+              puzzle.cursors[i].square.j != cursor.square.j ||
+              puzzle.cursors[i].isAcross != cursor.isAcross) {
+            setCursor(i, cursor.square, cursor.isAcross);
+          }
+        }
+      }
 
-  socket.on('leave', function(message) {
-    var update = JSON.parse(message);
-    if (puzzle && update.pid == puzzle.pid &&
-        puzzle.cursors.hasOwnProperty(update.uid)) {
-      eraseCursor(update.uid);
-      delete puzzle.cursors[update.uid];
+      // Erase any cursors that no longer exist.
+      for (var i in puzzle.cursors) {
+        if (puzzle.cursors.hasOwnProperty(i) &&
+            !update.cursors.hasOwnProperty(i) && i != uid) {
+          eraseCursor(i);
+          delete puzzle.cursors[i];
+        }
+      }
     }
   });
 
@@ -143,11 +163,11 @@ function setPuzzle(new_puzzle) {
   buildCluesList(puzzle.across, 'across');
   buildCluesList(puzzle.down, 'down');
 
+  for (var i in puzzle.cursors) {
+    drawCursor(i);
+  }
+
   // Add the local cursor to the cursors list and set input handlers.
-  puzzle.cursors[uid] = {
-      square: Square(0, 0),
-      isAcross: true,
-  };
   setCursor(uid, Square(0, 0), true);
   setInputHandlers();
 }
@@ -283,7 +303,7 @@ function findClueByNumber(clueNumber) {
   return null;
 }
 
-function setBoard(square, val, local) {
+function setBoard(square, val) {
   if (puzzle.board[square.i][square.j] != val) {
     puzzle.board[square.i][square.j] = val;
     if (val == '-') {
@@ -291,12 +311,6 @@ function setBoard(square, val, local) {
     } else {
       $('#contents' + square.i + '-' + square.j).html(val);
     }
-  }
-
-  if (local) {
-    update = {uid: uid, pid: puzzle.pid, i: square.i,
-              j: square.j, val: val};
-    socket.emit('set_board', JSON.stringify(update));
   }
 }
 
@@ -316,6 +330,7 @@ function setCursor(cid, square, isAcross) {
       locked = true;
       drawCurrentClues(whichClues(puzzle.cursors[cid]));
       locked = false;
+      send_puzzle_update();
     }
   }
 }
@@ -381,6 +396,8 @@ function moveCursor(move, isAcross) {
     }
     if (square.inRange) {
       setCursor(uid, square, cursor.isAcross);
+    } else {
+      send_puzzle_update();
     }
   }
 }
@@ -388,11 +405,13 @@ function moveCursor(move, isAcross) {
 function typeAndMove(val, move) {
   var cursor = puzzle.cursors[uid];
   if (board(cursor.square) != '.') {
-    setBoard(cursor.square, val, true);
+    setBoard(cursor.square, val);
     puzzle.version[cursor.square.i][cursor.square.j] += 1;
     var square = move(cursor.square);
     if (square.inRange && board(square) != '.') {
       setCursor(uid, square, cursor.isAcross);
+    } else {
+      send_puzzle_update();
     }
   }
 }
