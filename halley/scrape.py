@@ -30,6 +30,7 @@ def scrape_wapo(target, date):
   call('unzip %s' % (bin_file,))
 
   # These .jpz files are missing a title and author. We to add them manually.
+  # TODO: find the title on the page instead of doing this messy inference from the filename.
   title = date.strftime('%B %d, %Y - ') + filename_to_title(jpz_file)
   call('sed "s/<title><\\/title>/<title>%s<\\/title>/" %s > temp' % (title, jpz_file))
   call('mv temp %s' % (jpz_file,))
@@ -38,7 +39,7 @@ def scrape_wapo(target, date):
 
   call('java -jar jpz2puz.jar %s' % (jpz_file,))
   replace_unicode_apostrophes(puz_file)
-  call('mv %s ../puz_files/%s.puz' % (puz_file, date.isoformat()[:10]))
+  call('mv %s ../puz_files/%s\ WaPo.puz' % (puz_file, date.isoformat()[:10]))
   call('rm *.bin; rm *.jpz; rm *.puz; rm temp')
 
 if __name__ == '__main__':
