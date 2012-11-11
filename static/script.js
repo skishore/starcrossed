@@ -356,7 +356,7 @@ function drawCursor(cid, erase) {
   if (erase && !local) {
     for (var i in puzzle.cursors) {
       if (i != uid && i != cid) {
-        drawCursor(i, puzzle.cursors[i]);
+        drawCursor(i);
       }
     }
   }
