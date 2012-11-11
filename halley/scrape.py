@@ -4,14 +4,17 @@ import datetime
 import re
 import subprocess
 
-def filename_to_title(filename):
+def filename_to_title(filename, url):
   assert('_' in filename), 'Expected a filename with underscores, got "%s"' % (filename,)
-  title = filename.split('_')[0]
-  return re.sub('[A-Z]', lambda x: ' ' + x.group(0), title).strip().lstrip()
+  title_regex = '&quot;.*' + '.*'.join(list(filename.split('_')[0])) + '.*&quot;'
+  command = 'curl %s | grep -o "%s"' % (url, title_regex)
+  title_with_quotes = call(command)
+  assert(title_with_quotes), 'Ran command\n  %s\nbut got no title' % (command,)
+  return title_with_quotes[6:-6]
 
 def call(command):
   #print 'Calling "%s"' % (command,)
-  return subprocess.Popen(command, stdout=subprocess.PIPE, shell=True).stdout.read()
+  return subprocess.Popen(command, stdout=subprocess.PIPE, shell=True).stdout.read()[:-1]
 
 def replace_unicode_apostrophes(filename):
   contents = open(filename).read()
@@ -21,7 +24,7 @@ def scrape_wapo(target, date):
   call('rm *.bin; rm *.jpz; rm *.puz; rm temp')
 
   domain = 'http://www.sundaycrosswords.com/ccpuz'
-  bin_file = call('curl %s/%s | grep -o "[^\\\"]*\\.bin"' % (domain, target))[:-1]
+  bin_file = call('curl %s/%s | grep -o "[^\\\"]*\\.bin"' % (domain, target))
   assert(bin_file[-4:] == '.bin'), 'Got malformed .bin file: %s' % (bin_file,)
   jpz_file = '%s.jpz' % (bin_file[:-4],)
   puz_file = '%s.puz' % (bin_file[:-4],)
@@ -30,8 +33,7 @@ def scrape_wapo(target, date):
   call('unzip %s' % (bin_file,))
 
   # These .jpz files are missing a title and author. We to add them manually.
-  # TODO: find the title on the page instead of doing this messy inference from the filename.
-  title = date.strftime('%B %d, %Y - ') + filename_to_title(jpz_file)
+  title = date.strftime('%B %d, %Y - ') + filename_to_title(jpz_file, '%s/%s' % (domain, target))
   call('sed "s/<title><\\/title>/<title>%s<\\/title>/" %s > temp' % (title, jpz_file))
   call('mv temp %s' % (jpz_file,))
   call('sed "s/<creator><\\/creator>/<creator>Merl Reagle<\\/creator>/" %s > temp' % (jpz_file,))
@@ -45,7 +47,7 @@ def scrape_wapo(target, date):
 if __name__ == '__main__':
   date_str = call('curl http://www.sundaycrosswords.com/ccpuz/MPuz.php | grep -o "For  puzzle of [0-9]\+/[0-9]\+/[0-9]\+"')
   assert(date_str and date_str[:15] == 'For  puzzle of '), 'Unexpected date "%s"' % (date_str,)
-  date = datetime.datetime.strptime(date_str[15:-1], '%m/%d/%Y') + datetime.timedelta(days=7)
+  date = datetime.datetime.strptime(date_str[15:], '%m/%d/%Y') + datetime.timedelta(days=7)
   scrape_wapo('MPuz.php', date)
   scrape_wapo('MPuz1WO.php', date + datetime.timedelta(days=-7))
   scrape_wapo('MPuz2WO.php', date + datetime.timedelta(days=-14))
