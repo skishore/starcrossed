@@ -43,6 +43,30 @@ app.post('/upload', function(req, res) {
   res.end('Upload posted');
 });
 
+app.post('/saved', function(req, res) {
+  var uid = req.body.uid;
+  var filename = req.body.filename;
+  console.log('Received request for file %s from user %s',
+              filename, uid);
+  filename = 'puz_files/' + filename;
+  fs.readFile(filename, function(err, data) {
+    // TODO: Eliminate a bit of this code duplication.
+    if (err) {
+      console.error('Could not open file: %s', err);
+    } else {
+      var pid = Math.floor((1 << 30)*Math.random());
+      var puzzle = parse_puzzle_data(data);
+      puzzle.pid = pid;
+      puzzles[pid] = puzzle;
+      var message = JSON.stringify({uid: uid, pid: pid});
+      io.sockets.emit('pid', message);
+      console.log('Created puzzle ' + pid);
+    }
+  });
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Upload posted');
+});
+
 web_server = http.createServer(app);
 
 web_server.listen(3000, function () {
@@ -208,6 +232,16 @@ function sync(puzzle, update) {
 var io = sio.listen(web_server, {log: false})
 
 io.sockets.on('connection', function (socket) {
+  socket.on('list_puzzles', function() {
+    fs.readdir('puz_files', function(err, files) {
+      var message = JSON.stringify({
+          err: err,
+          files: files,
+      });
+      socket.emit('list_puzzles', message);
+    });
+  });
+
   socket.on('get_puzzle', function(message) {
     var request = JSON.parse(message);
     socket.uid = request.uid;

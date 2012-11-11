@@ -32,13 +32,30 @@ function send_puzzle_update() {
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
-  $('#uid-text').val(uid);
+  $('.uid-text').val(uid);
   socket = io.connect();
 
   socket.on('connect', function() {
     $('#status').html('Connected!');
     $('#status').removeClass('waiting disconnected');
     $('#status').addClass('connected');
+    if (!puzzle) {
+      socket.emit('list_puzzles');
+    }
+  });
+
+  socket.on('list_puzzles', function(message) {
+    var result = JSON.parse(message)
+    var html = '';
+    if (result.err) {
+      html += buildOption('Error (see debug log)');
+      console.debug('list_puzzles error:', result.err);
+    } else {
+      for (var i = result.files.length - 1; i >= 0; i--) {
+        html += buildOption(result.files[i]);
+      }
+    }
+    $('select[name="filename"]').html(html);
   });
 
   socket.on('pid', function(message) {
@@ -129,6 +146,10 @@ function readPIDFromHash() {
   } else {
     setPuzzle(undefined);
   }
+}
+
+function buildOption(filename) {
+  return '<option value="' + filename + '">' + filename + '</option>';
 }
 
 /* ----------------------------------------------------

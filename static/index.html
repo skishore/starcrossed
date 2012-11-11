@@ -48,9 +48,20 @@
             method='post' target='trick-iframe'>
         <span>Upload a .puz file, then share the URL with a friend!</span>
         <br>
-        <input type='text' name='uid' id='uid-text' class='hidden' />
+        <input type='text' name='uid' class='hidden uid-text' />
         <input type='file' name='puz' />
         <button type='submit'>Upload a .puz file</button>
+      </form>
+      <br>
+      <form enctype='multipart/form-data' action='/saved'
+            method='post' target='trick-iframe'>
+        <span>Alternatively, choose from one of the saved .puz files below:</span>
+        <br>
+        <input type='text' name='uid' class='hidden uid-text' />
+        <select name='filename'>
+          <option value="">Loading...</option>
+        </select>
+        <button type='submit'>Select</button>
       </form>
       <iframe class='hidden' name='trick-iframe'></iframe>
     </div>

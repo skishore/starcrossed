@@ -1,8 +1,0 @@
-x Divide users by puzzle on the server / send only to other users in the same
-x Create join and leave events when users navigate away or lose connection
-x Vacuum old puzzles
-
-x Fix muliti-user erasing bug
-
-  Investigate server lag
-  Build chat client?
