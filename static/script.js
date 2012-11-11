@@ -168,7 +168,9 @@ function setPuzzle(new_puzzle) {
   }
 
   // Add the local cursor to the cursors list and set input handlers.
-  setCursor(uid, Square(0, 0), true);
+  if (!puzzle.cursors.hasOwnProperty(uid)) {
+    setCursor(uid, Square(0, 0), true);
+  }
   setInputHandlers();
 }
 
