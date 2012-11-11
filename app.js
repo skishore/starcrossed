@@ -52,7 +52,7 @@ web_server.listen(3000, function () {
 });
 
 // Parses a .puz file's data and returns a puzzle object. This object has
-// a title, author, height, width, an annotated board, and accross and down
+// a title, author, height, width, an annotated board, and across and down
 // clue dictionaries mapping clue number to clue.
 function parse_puzzle_data(data) {
   var puzzle = {}
@@ -79,15 +79,15 @@ function parse_puzzle_data(data) {
   puzzle.title = parser.next();
   puzzle.author = parser.next();
   parser.next();
-  // Annotate the board and build the accross and down clue dictionaries.
-  puzzle.accross = {}
+  // Annotate the board and build the across and down clue dictionaries.
+  puzzle.across = {}
   puzzle.down = {}
   var clue = 1;
   for (i = 0; i < puzzle.height; i++) {
     for (j = 0; j < puzzle.width; j++) {
-      if (is_accross_clue(puzzle.board, i, j)) {
+      if (is_across_clue(puzzle.board, i, j)) {
         puzzle.annotation[i][j] = clue;
-        puzzle.accross[clue] = parser.next();
+        puzzle.across[clue] = parser.next();
         if (is_down_clue(puzzle.board, i, j)) {
           puzzle.down[clue] = parser.next();
         }
@@ -99,10 +99,11 @@ function parse_puzzle_data(data) {
       }
     }
   }
+  puzzle.cursors = {};
   return puzzle;
 }
 
-function is_accross_clue(board, row, col) {
+function is_across_clue(board, row, col) {
   if (board[row][col] == '.') {
     return false;
   }

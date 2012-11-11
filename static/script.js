@@ -3,15 +3,13 @@ var up = function(square) {return Square(square.i - 1, square.j)};
 var right = function(square) {return Square(square.i, square.j + 1)};
 var down = function(square) {return Square(square.i + 1, square.j)};
 var moves = {37: left, 38: up, 39: right, 40: down};
-var isAccrossKey = {37: true, 38: false, 39: true, 40: false};
+var isAcrossKey = {37: true, 38: false, 39: true, 40: false};
 var squareRegex = /^square([0-9]*)-([0-9]*)$/;
-var moveOnBlack = false;
 
 var uid;
-var state;
 var socket;
 var puzzle;
-var lock = true;
+var locked = false;
 
 $(document).ready(function() {
   uid = Math.floor((1 << 30)*Math.random());
@@ -44,10 +42,10 @@ $(document).ready(function() {
   socket.on('join', function(message) {
     var update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid) {
-      myPos = {uid: uid, pid: puzzle.pid, i: state.square.i,
-               j: state.square.j, isAccross: state.isAccross};
-      socket.emit('set_cursor', JSON.stringify(myPos));
-      setCursor(Square(0, 0), true, update.uid);
+      //myPos = {uid: uid, pid: puzzle.pid, i: state.square.i,
+      //         j: state.square.j, isAcross: state.isAcross};
+      //socket.emit('set_cursor', JSON.stringify(myPos));
+      //setCursor(Square(0, 0), true, update.uid);
     }
   });
 
@@ -56,7 +54,9 @@ $(document).ready(function() {
     if (puzzle && update.pid == puzzle.pid) {
       for (var i = 0; i < puzzle.height; i++) {
         for (var j = 0; j < puzzle.width; j++) {
-          if (update.version[i][j] > puzzle.version[i][j]) {
+          if (update.version[i][j] > puzzle.version[i][j] ||
+              (update.version[i][j] == puzzle.version[i][j] &&
+               update.board[i][j] != puzzle.board[i][j])) {
             setBoard(Square(i, j), update.board[i][j], false);
             puzzle.version[i][j] = update.version[i][j];
           }
@@ -68,17 +68,16 @@ $(document).ready(function() {
   socket.on('set_cursor', function(message) {
     var update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid && update.uid != uid) {
-      setCursor(Square(update.i, update.j), update.isAccross, update.uid);
+      setCursor(Square(update.i, update.j), update.isAcross, update.uid);
     }
   });
 
   socket.on('leave', function(message) {
     var update = JSON.parse(message);
     if (puzzle && update.pid == puzzle.pid &&
-        state.others.hasOwnProperty(update.uid)) {
-      var other = state.others[update.uid];
-      drawCursor(other.square, other.isAccross, true, update.uid);
-      delete state.others[update.uid];
+        puzzle.cursors.hasOwnProperty(update.uid)) {
+      eraseCursor(update.uid);
+      delete puzzle.cursors[update.uid];
     }
   });
 
@@ -126,8 +125,6 @@ function setPuzzle(new_puzzle) {
     return;
   }
 
-  state = {square: Square(0, 0), isAccross: true, others: {}};
-
   $('#board-outer-wrapper').removeClass('hidden');
   $('#upload-form-div').addClass('hidden');
   $('#title').html(puzzle.title);
@@ -143,11 +140,15 @@ function setPuzzle(new_puzzle) {
     }
   }
   $('#board').html(board_html);
-  buildCluesList(puzzle.accross, 'accross');
+  buildCluesList(puzzle.across, 'across');
   buildCluesList(puzzle.down, 'down');
 
-  // Update the current state and set input handlers.
-  setCursor(Square(0, 0), true);
+  // Add the local cursor to the cursors list and set input handlers.
+  puzzle.cursors[uid] = {
+      square: Square(0, 0),
+      isAcross: true,
+  };
+  setCursor(uid, Square(0, 0), true);
   setInputHandlers();
 }
 
@@ -207,11 +208,17 @@ function buildClue(num, clue) {
 ---------------------------------------------------- */
 
 function Square(i, j) {
-  var result = {i: i, j: j}
-  result.inRange = (puzzle && i >= 0 && i < puzzle.height &&
-                    j >= 0 && j < puzzle.width);
-  result.div = $('#square' + i + '-' + j);
-  return result;
+  return {
+      i: i,
+      j: j,
+      inRange: (puzzle &&
+                i >= 0 && i < puzzle.height &&
+                j >= 0 && j < puzzle.width),
+  };
+}
+
+function div(square) {
+  return $('#square' + square.i + '-' + square.j);
 }
 
 // The input square should be in range.
@@ -224,19 +231,19 @@ function board(square) {
   return puzzle.board[square.i][square.j];
 }
 
-// The input square should be in range.
-function clueSquares(cursor, isAccross) {
-  if (board(cursor) == '.') {
+// The input cursor's square should be in range.
+function clueSquares(cursor) {
+  if (board(cursor.square) == '.') {
     return [];
   }
-  var moves = (isAccross ? [left, right] : [up, down])
+  var moves = (cursor.isAcross ? [left, right] : [up, down])
   var results = []
-  var square = moves[0](cursor);
+  var square = moves[0](cursor.square);
   while (square.inRange && board(square) != '.') {
     results.push(square);
     square = moves[0](square);
   }
-  square = moves[1](cursor);
+  square = moves[1](cursor.square);
   while (square.inRange && board(square) != '.') {
     results.push(square);
     square = moves[1](square);
@@ -244,12 +251,12 @@ function clueSquares(cursor, isAccross) {
   return results;
 }
 
-// The input square should be in range.
-function whichClues(cursor, isAccross) {
-  var moves = (isAccross ? [left, up] : [up, left]);
+// The input cursor's square should be in range.
+function whichClues(cursor) {
+  var moves = (cursor.isAcross ? [left, up] : [up, left]);
   var results = [];
   for (var i = 0; i < 2; i++) {
-    var square = cursor;
+    var square = cursor.square;
     var last = '';
     while (square.inRange && board(square) != '.') {
       last = annotation(square);
@@ -258,7 +265,7 @@ function whichClues(cursor, isAccross) {
     if (last == '') {
       results.push(null);
     } else {
-      results.push([last, (moves[i] == left ? 'accross' : 'down')]);
+      results.push([last, (moves[i] == left ? 'across' : 'down')]);
     }
   }
   return results;
@@ -293,57 +300,55 @@ function setBoard(square, val, local) {
   }
 }
 
-function setCursor(square, isAccross, other) {
-  if (other) {
-    // Doing a remote update. Simply draw the cursor.
-    if (state.others.hasOwnProperty(other)) {
-      drawCursor(state.others[other].square,
-                 state.others[other].isAccross, true, other);
+function setCursor(cid, square, isAcross) {
+  if (cid != uid || !locked) {
+    if (puzzle.cursors.hasOwnProperty(cid)) {
+      eraseCursor(cid);
     }
-    state.others[other] = {square: square, isAccross: isAccross};
-    drawCursor(square, isAccross, false, other);
-  } else if (lock) {
-    // Doing a local cursor position update. Pick up the semaphore
-    // to avoid a cascade of update -> select clues -> update...
-    lock = false;
-    drawCursor(state.square, state.isAccross, true);
-    state.isAccross = isAccross;
-    if (square.inRange) {
-      state.square = square;
-    }
-    drawCursor(state.square, state.isAccross, false);
-    drawCurrentClues(whichClues(state.square, state.isAccross));
-    lock = true;
+    puzzle.cursors[cid] = {
+        square: square,
+        isAcross: isAcross,
+    };
+    drawCursor(cid);
 
-    update = {uid: uid, pid: puzzle.pid, i: square.i,
-              j: square.j, isAccross: isAccross};
-    socket.emit('set_cursor', JSON.stringify(update));
+    if (cid == uid) {
+      // Prevent updating the current clues from moving the cursor.
+      locked = true;
+      drawCurrentClues(whichClues(puzzle.cursors[cid]));
+      locked = false;
+    }
   }
 }
 
-function drawCursor(cursor, isAccross, erase, other) {
-  var cursorClass = (other ? 'other-cursor' : 'cursor');
-  var highlightClass = (other ? 'other-highlight' : 'highlight');
-  highlights = clueSquares(cursor, isAccross);
+function drawCursor(cid, erase) {
+  var local = (cid == uid);
+  var cursor = puzzle.cursors[cid];
+  var cursorClass = (local ? 'cursor' : 'other-cursor');
+  var highlightClass = (local ? 'highlight' : 'other-highlight');
+  highlights = clueSquares(cursor);
   if (erase) {
     for (var i = 0; i < highlights.length; i++) {
-      highlights[i].div.removeClass(cursorClass + ' ' + highlightClass);
+      div(highlights[i]).removeClass(cursorClass + ' ' + highlightClass);
     }
-    cursor.div.removeClass(cursorClass + ' ' + highlightClass);
+    div(cursor.square).removeClass(cursorClass + ' ' + highlightClass);
   } else {
     for (var i = 0; i < highlights.length; i++) {
-      highlights[i].div.addClass(highlightClass);
+      div(highlights[i]).addClass(highlightClass);
     }
-    cursor.div.addClass(cursorClass);
+    div(cursor.square).addClass(cursorClass);
   }
 
-  if (erase && other) {
-    for (var i in state.others) {
-      if (i != other) {
-        drawCursor(state.others[i].square, state.others[i].isAccross, false, i);
+  if (erase && !local) {
+    for (var i in puzzle.cursors) {
+      if (i != uid && i != cid) {
+        drawCursor(i, puzzle.cursors[i]);
       }
     }
   }
+}
+
+function eraseCursor(cid) {
+  drawCursor(cid, true);
 }
 
 function drawCurrentClues(clues) {
@@ -365,35 +370,29 @@ function drawCurrentClues(clues) {
   }
 }
 
-function oldMoveCursor(move, isAccross) {
-  if (isAccross != state.isAccross) {
-    setCursor(state.square, isAccross);
+function moveCursor(move, isAcross) {
+  var cursor = puzzle.cursors[uid];
+  if (isAcross != cursor.isAcross) {
+    setCursor(uid, cursor.square, isAcross);
   } else {
-    setCursor(move(state.square), state.isAccross);
-  }
-}
-
-function newMoveCursor(move, isAccross) {
-  if (isAccross != state.isAccross) {
-    setCursor(state.square, isAccross);
-  } else {
-    var square = move(state.square);
+    var square = move(cursor.square);
     while (square.inRange && board(square) == '.') {
       square = move(square);
     }
     if (square.inRange) {
-      setCursor(square, state.isAccross);
+      setCursor(uid, square, cursor.isAcross);
     }
   }
 }
 
 function typeAndMove(val, move) {
-  if (board(state.square) != '.') {
-    setBoard(state.square, val, true);
-    puzzle.version[state.square.i][state.square.j] += 1;
-    var square = move(state.square);
+  var cursor = puzzle.cursors[uid];
+  if (board(cursor.square) != '.') {
+    setBoard(cursor.square, val, true);
+    puzzle.version[cursor.square.i][cursor.square.j] += 1;
+    var square = move(cursor.square);
     if (square.inRange && board(square) != '.') {
-      setCursor(square, state.isAccross);
+      setCursor(uid, square, cursor.isAcross);
     }
   }
 }
@@ -401,11 +400,11 @@ function typeAndMove(val, move) {
 function setInputHandlers() {
   clearInputHandlers();
 
-  $('#accross').bind('select', function(event) {
+  $('#across').bind('select', function(event) {
     if (event.args && event.args.item) {
       var square = findClueByNumber(event.args.item.value);
       if (square != null) {
-        setCursor(square, true);
+        setCursor(uid, square, true);
       }
     }
     $('#board').focus();
@@ -415,27 +414,27 @@ function setInputHandlers() {
     if (event.args && event.args.item) {
       var square = findClueByNumber(event.args.item.value);
       if (square != null) {
-        setCursor(square, false);
+        setCursor(uid, square, false);
       }
     }
     $('#board').focus();
   });
 
   $('#board').keydown(function(event) {
+    var cursor = puzzle.cursors[uid];
     if (moves.hasOwnProperty(event.which)) {
-      var moveCursor = (moveOnBlack ? oldMoveCursor : newMoveCursor);
-      moveCursor(moves[event.which], isAccrossKey[event.which]);
+      moveCursor(moves[event.which], isAcrossKey[event.which]);
       event.preventDefault();
     } else if (event.which >= 65 && event.which < 91) {
       var letter = String.fromCharCode(event.which);
-      typeAndMove(letter, (state.isAccross ? right : down));
+      typeAndMove(letter, (cursor.isAcross ? right : down));
     } else if (event.which == 8) {
-      typeAndMove('-', (state.isAccross ? left : up));
+      typeAndMove('-', (cursor.isAcross ? left : up));
       event.preventDefault();
     } else if (event.which == 32 || event.which == 46) {
-      typeAndMove('-', (state.isAccross ? right : down));
+      typeAndMove('-', (cursor.isAcross ? right : down));
     } else if (event.which == 9) {
-      var type = (state.isAccross ? 'accross' : 'down');
+      var type = (cursor.isAcross ? 'across' : 'down');
       var index = $('#' + type).jqxListBox('selectedIndex');
       if (event.shiftKey) {
         if (index > 0) {
@@ -453,13 +452,14 @@ function setInputHandlers() {
   $('#board').mousedown(function(event) {
     var target = squareRegex.exec(event.target.id);
     if (target != null) {
+      var cursor = puzzle.cursors[uid];
       var square = Square(parseInt(target[1]), parseInt(target[2]))
-      if (square.i != state.square.i || square.j != state.square.j) {
-        if (moveOnBlack || (square.inRange && board(square) != '.')) {
-          setCursor(square, state.isAccross);
+      if (square.i != cursor.square.i || square.j != cursor.square.j) {
+        if (square.inRange && board(square) != '.') {
+          setCursor(uid, square, cursor.isAcross);
         }
       } else {
-        setCursor(state.square, !state.isAccross);
+        setCursor(uid, cursor.square, !cursor.isAcross);
       }
     }
     event.preventDefault();
@@ -470,7 +470,7 @@ function setInputHandlers() {
 }
 
 function clearInputHandlers() {
-  $('#accross').unbind('select');
+  $('#across').unbind('select');
   $('#down').unbind('select');
   $('#board').unbind('keydown');
   $('#board').unbind('mousedown');
