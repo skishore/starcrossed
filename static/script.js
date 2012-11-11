@@ -190,7 +190,14 @@ function setPuzzle(new_puzzle) {
 
   // Add the local cursor to the cursors list and set input handlers.
   if (!puzzle.cursors.hasOwnProperty(uid)) {
-    setCursor(uid, Square(0, 0), true);
+    for (var ij = 0; ij < puzzle.height * puzzle.width; ij++) {
+      i = Math.floor(ij/puzzle.width);
+      j = ij % puzzle.width;
+      if (puzzle.board[i][j] != '.') {
+        setCursor(uid, Square(i, j), true);
+        break;
+      }
+    }
   }
   setInputHandlers();
 }
