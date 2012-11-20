@@ -41,6 +41,8 @@ $(document).ready(function() {
     $('#status').addClass('connected');
     if (!puzzle) {
       socket.emit('list_puzzles');
+    } else {
+      send_puzzle_update();
     }
   });
 
