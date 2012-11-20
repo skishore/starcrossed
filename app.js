@@ -256,6 +256,7 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('update_puzzle', function(message) {
     var update = JSON.parse(message);
+    socket.uid = update.uid;
     join(update.pid, socket);
     if (puzzles.hasOwnProperty(update.pid)) {
       sync(puzzles[update.pid], update);
