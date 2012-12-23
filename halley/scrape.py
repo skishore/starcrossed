@@ -9,7 +9,9 @@ def filename_to_title(filename, url):
   title_regex = '&quot;.*' + '.*'.join(list(filename.split('_')[0])) + '.*&quot;'
   command = 'curl %s | grep -o "%s"' % (url, title_regex)
   title_with_quotes = call(command)
-  assert(title_with_quotes), 'Ran command\n  %s\nbut got no title' % (command,)
+  if not title_with_quotes:
+    print 'Ran command\n  %s\nbut got no title' % (command,)
+    return raw_input('The filename is %s. Enter a title: ' % (filename,))
   return title_with_quotes[6:-6]
 
 def call(command):
@@ -40,7 +42,11 @@ def scrape_wapo(target, date):
   call('mv temp %s' % (jpz_file,))
 
   call('java -jar jpz2puz.jar %s' % (jpz_file,))
-  replace_unicode_apostrophes(puz_file)
+  try:
+    replace_unicode_apostrophes(puz_file)
+  except Exception, e:
+    print 'Could not find puzzle file: %s' % (e,)
+    pass
   call('mv %s ../puz_files/%s\ WaPo.puz' % (puz_file, date.isoformat()[:10]))
   call('rm *.bin; rm *.jpz; rm *.puz; rm temp')
 
